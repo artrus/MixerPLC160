@@ -1,0 +1,73 @@
+
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '' *)
+(* @OBJECTFLAGS := '0, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+PROGRAM Write_Outputs
+VAR
+	i:INT;
+
+
+END_VAR
+
+(* @END_DECLARATION := '0' *)
+
+FOR i:=0 TO CountDO-1 DO
+
+	IF DO_ARRAY[i].fNewVal AND DO_ARRAY[i].fEnable THEN				(*Если пришла новая команда и управление выходом включено*)
+		IF  DO_ARRAY[i].fActVal THEN										(*На активацию*)
+			DO_ARRAY[i].fWriteVal:=NOT(DO_ARRAY[i].fdefaultVal);			(*Тогда меняем состояние выхода*)
+		ELSE																	(*иначе если не на активацию*)
+			DO_ARRAY[i].fWriteVal:=DO_ARRAY[i].fdefaultVal;				(*возвращаем обратно*)
+		END_IF																(**)
+		DO_ARRAY[i].fNewVal:=FALSE;										(*сброс признака новой команды*)
+	END_IF
+
+	IF DO_ARRAY[i].TimeImp <> T#0ms AND DO_ARRAY[i].fOldVal<> DO_ARRAY[i].fWriteVal THEN											(*Если выход импульсный *)
+		DO_ARRAY[i].ImpulseTimer(IN:=TRUE, PT:=DO_ARRAY[i].TimeImp);			(**)
+		IF DO_ARRAY[i].ImpulseTimer.Q THEN											(**)
+			DO_ARRAY[i].fWriteVal:=DO_ARRAY[i].fdefaultVal;							(*Возвращаем DO через время*)
+			DO_ARRAY[i].ImpulseTimer(IN:=FALSE, PT:=DO_ARRAY[i].TimeImp);		(**)
+			DO_ARRAY[i].fOldVal:= DO_ARRAY[i].fWriteVal;
+		END_IF
+	END_IF
+
+END_FOR;
+
+(*Присваивание значений выходам*)
+Pump:=DO_ARRAY[0].fWriteVal;
+valv_CYKL:=DO_ARRAY[1].fWriteVal;
+valv_A:=DO_ARRAY[2].fWriteVal;
+valv_B:=DO_ARRAY[3].fWriteVal;
+valv_C:=DO_ARRAY[4].fWriteVal;
+valv_Wat:=DO_ARRAY[5].fWriteVal;
+sirena:=DO_ARRAY[6].fWriteVal;
+(*
+ :=DO_ARRAY[7].fWriteVal;
+ :=DO_ARRAY[8].fWriteVal;
+ :=DO_ARRAY[9].fWriteVal;
+ :=DO_ARRAY[10].fWriteVal;
+ :=DO_ARRAY[11].fWriteVal;
+ :=DO_ARRAY[12].fWriteVal;
+ :=DO_ARRAY[13].fWriteVal;
+ :=DO_ARRAY[14].fWriteVal;
+ :=DO_ARRAY[15].fWriteVal;
+*)
+out_gr1.0 :=DO_ARRAY[16].fWriteVal;
+out_gr1.1 :=DO_ARRAY[17].fWriteVal;
+out_gr1.2 :=DO_ARRAY[18].fWriteVal;
+out_gr1.3 :=DO_ARRAY[19].fWriteVal;
+out_gr1.4 :=DO_ARRAY[20].fWriteVal;
+out_gr1.5 :=DO_ARRAY[21].fWriteVal;
+out_gr1.6 :=DO_ARRAY[22].fWriteVal;
+out_gr1.7 :=DO_ARRAY[23].fWriteVal;
+out_gr1.8 :=DO_ARRAY[24].fWriteVal;
+out_gr1.9 :=DO_ARRAY[25].fWriteVal;
+out_gr1.10 :=DO_ARRAY[26].fWriteVal;
+out_gr1.11 :=DO_ARRAY[27].fWriteVal;
+out_gr1.12 :=DO_ARRAY[28].fWriteVal;
+out_gr1.13 :=DO_ARRAY[29].fWriteVal;
+out_gr1.14 :=DO_ARRAY[30].fWriteVal;
+out_gr1.15 :=DO_ARRAY[31].fWriteVal;
+END_PROGRAM

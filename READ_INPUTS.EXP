@@ -1,0 +1,82 @@
+
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '' *)
+(* @OBJECTFLAGS := '0, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+PROGRAM Read_Inputs
+VAR
+	I: INT;
+
+	sum : REAL;
+END_VAR
+(* @END_DECLARATION := '0' *)
+(*Дискретные выходы*********************************************************************************************)
+DI_BUF.0:=count;
+DI_BUF.1:=power_on;
+DI_BUF.2:=lev_25;
+DI_BUF.3:=lev_50;
+DI_BUF.4:=lev_75;
+DI_BUF.5:=lev_100;
+DI_BUF.6:=BK_nas;
+DI_BUF.7:=OSTANOV;
+
+
+FOR I:=0 TO CountDI-1 DO
+	DI_ARRAY[I].inVal:= WORD_TO_BOOL(DI_BUF AND 1);
+	DI_BUF:=ROR(DI_BUF,1);
+	IF	DI_ARRAY[I].inVal<>DI_ARRAY[I].outVal AND DI_ARRAY[I].timeDreb = T#0ms THEN
+		DI_ARRAY[I].outVal:=DI_ARRAY[I].inVal;
+	ELSIF	DI_ARRAY[I].inVal<>DI_ARRAY[I].outVal AND DI_ARRAY[I].timeDreb <> T#0ms THEN
+		DI_ARRAY[I].TimerDreb(IN:=TRUE, PT:=DI_ARRAY[I].timeDreb);
+		IF DI_ARRAY[I].TimerDreb.Q THEN
+			DI_ARRAY[I].outVal:=DI_ARRAY[I].inVal;
+			DI_ARRAY[I].TimerDreb(IN:=FALSE, PT:=DI_ARRAY[I].timeDreb);
+		END_IF
+	ELSE
+		DI_ARRAY[I].TimerDreb(IN:=FALSE, PT:=DI_ARRAY[I].timeDreb);
+	END_IF
+	DI_ARRAY[i].outVal_inv:= NOT DI_ARRAY[i].outVal;
+END_FOR
+
+
+
+(*Аналоговые входы*********************************************************************************************)
+AI_BUF[0]:=sens_EC;
+AI_BUF[1]:=sens_PH;
+AI_BUF[2]:=sens_Trast;
+AI_BUF[3]:=sens_Pnas;
+
+FOR I:=0 TO CountAI-1 DO
+(*Проверка на изменение числа выборок для усреднения, если изм. то чситаем заново*)
+	IF AI_ARRAY[I].private.last_n <> AI_ARRAY[I].n_Filtr THEN
+		AI_ARRAY[I].private.b_Complete:=FALSE;
+		AI_ARRAY[I].private.last_n:=AI_ARRAY[I].n_Filtr;
+		FOR i:=0 TO 32-1 DO
+			AI_ARRAY[I].private.arr_inputs[i] := 0;
+		END_FOR
+	END_IF
+
+
+	AI_ARRAY[I].private.TimerFiltr(IN:=TRUE, PT:=AI_ARRAY[I].TimeFiltr);
+	(*выборка по таймеру*)
+	IF AI_ARRAY[I].private.TimerFiltr.Q THEN
+		AI_ARRAY[I].private.arr_inputs[AI_ARRAY[I].private.ind] := AI_BUF[i];
+		AI_ARRAY[I].private.ind:= 	AI_ARRAY[I].private.ind + 1;
+		AI_ARRAY[I].private.TimerFiltr(IN:=FALSE, PT:=AI_ARRAY[I].TimeFiltr);
+	END_IF
+	IF 	AI_ARRAY[I].private.ind >=  AI_ARRAY[I].n_Filtr THEN
+		AI_ARRAY[I].private.ind:=0;
+		AI_ARRAY[I].private.b_Complete:=TRUE;
+	END_IF
+	(*Если уже необходимое кол-во то высчитываем результат*)
+	IF 	AI_ARRAY[I].private.b_Complete THEN
+		sum:=0;
+		FOR i:=0 TO AI_ARRAY[I].n_Filtr -1  DO
+			sum:=sum +	AI_ARRAY[I].private.arr_inputs[i];
+		END_FOR
+			AI_ARRAY[I].outVal :=sum / AI_ARRAY[I].n_Filtr;
+			AI_ARRAY[I].private.b_Complete:=FALSE;
+	END_IF
+END_FOR
+END_PROGRAM
