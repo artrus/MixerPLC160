@@ -1,0 +1,27 @@
+
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '' *)
+(* @OBJECTFLAGS := '0, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+FUNCTION_BLOCK fbPodpitka
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+	Pump: BOOL;
+END_VAR
+VAR
+
+di_lev25 : POINTER TO BOOL;
+	di_lev50 : POINTER TO BOOL;
+	di_lev75 : POINTER TO BOOL;
+	di_lev100 : POINTER TO BOOL;
+END_VAR
+(* @END_DECLARATION := '0' *)
+
+di_lev25 := ADR(DI_ARRAY[2].outVal);
+di_lev50 := ADR(DI_ARRAY[3].outVal);
+di_lev75 := ADR(DI_ARRAY[4].outVal);
+di_lev100 := ADR(DI_ARRAY[5].outVal);
+
+END_FUNCTION_BLOCK

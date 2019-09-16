@@ -2,9 +2,9 @@
 
 (* @NESTEDCOMMENTS := 'Yes' *)
 (* @PATH := '' *)
-(* @OBJECTFLAGS := '0, 8' *)
+(* @OBJECTFLAGS := '8, 8' *)
 (* @SYMFILEFLAGS := '2048' *)
-PROGRAM Podpitka
+PROGRAM INIT
 VAR
 END_VAR
 (* @END_DECLARATION := '0' *)

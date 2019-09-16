@@ -60,6 +60,9 @@ STRUCT
 	TimerFiltr : TON;		(*Таймер выборки значения при фильтрации*)
 	arr_inputs : ARRAY [0..32] OF REAL;	(*,Буфер входных сигналов*)
 	last_n : INT;
+	tempVal : REAL;
+	MaxACP : REAL;
+	MinACP : REAL;
 END_STRUCT
 END_TYPE
 (* @END_DECLARATION := '0' *)

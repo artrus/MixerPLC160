@@ -36,7 +36,7 @@ FOR i:=0 TO CountDO-1 DO
 END_FOR;
 
 (*Присваивание значений выходам*)
-Pump:=DO_ARRAY[0].fWriteVal;
+DO_Pump:=DO_ARRAY[0].fWriteVal;
 valv_CYKL:=DO_ARRAY[1].fWriteVal;
 valv_A:=DO_ARRAY[2].fWriteVal;
 valv_B:=DO_ARRAY[3].fWriteVal;

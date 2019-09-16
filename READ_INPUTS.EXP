@@ -75,8 +75,10 @@ FOR I:=0 TO CountAI-1 DO
 		FOR i:=0 TO AI_ARRAY[I].n_Filtr -1  DO
 			sum:=sum +	AI_ARRAY[I].private.arr_inputs[i];
 		END_FOR
-			AI_ARRAY[I].outVal :=sum / AI_ARRAY[I].n_Filtr;
+			AI_ARRAY[I].private.tempVal  :=sum / AI_ARRAY[I].n_Filtr;
 			AI_ARRAY[I].private.b_Complete:=FALSE;
 	END_IF
 END_FOR
+	(*Преобразование к границам*)
+	AI_ARRAY[I].outVal:=(AI_ARRAY[I].min_fiz*AI_ARRAY[I].private.MaxACP-AI_ARRAY[I].max_fiz*AI_ARRAY[I].private.MinACP)/(AI_ARRAY[I].private.MaxACP-AI_ARRAY[I].private.MinACP)+((AI_ARRAY[I].max_fiz-AI_ARRAY[I].min_fiz)/(AI_ARRAY[I].private.MaxACP-AI_ARRAY[I].private.MinACP))*AI_ARRAY[I].private.tempVal;
 END_PROGRAM
