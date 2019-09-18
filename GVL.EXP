@@ -1,0 +1,32 @@
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @GLOBAL_VARIABLE_LIST := 'Global_Variables' *)
+(* @PATH := '' *)
+(* @OBJECTFLAGS := '0, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+VAR_GLOBAL
+	H_com: UINT;		(*час реального времени*)
+	M_com: UINT;		(*минуты реального времени*)
+	(*Версия ПО*)
+	VERSION_M:WORD	:= 2;
+	VERSION_L:WORD 	:= 0;
+
+	INITIAL:BOOL:=TRUE;
+
+	DI_BUF: WORD;
+	AI_BUF : ARRAY [0..3] OF REAL;
+	CountDI : INT :=8;
+	CountDO:INT := 32;
+	CountAI : INT :=4;
+	DI_ARRAY : ARRAY [0..7] OF tDI; (*Массив DI*)
+	DO_ARRAY : ARRAY[0..31] OF tDO; (*массив DO*)
+	AI_ARRAY : ARRAY[0..3] OF tAI; (*массив AI*)
+END_VAR
+
+(* @OBJECT_END := 'Global_Variables' *)
+(* @CONNECTIONS := Global_Variables
+FILENAME : ''
+FILETIME : 0
+EXPORT : 0
+NUMOFCONNECTIONS : 0
+*)
