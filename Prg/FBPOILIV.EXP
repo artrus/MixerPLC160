@@ -1,0 +1,87 @@
+
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '' *)
+(* @OBJECTFLAGS := '0, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+FUNCTION_BLOCK fbPoliv
+VAR_INPUT
+	enable : BOOL;
+	stop : BOOL;
+	rasp : tRasp;
+	count : BOOL;
+END_VAR
+VAR_OUTPUT
+	valve : BOOL;
+	valve_circle : BOOL;
+	pump : BOOL;
+	act_doz : BOOL;
+	podpitka : BOOL;
+END_VAR
+VAR
+	state : INT;	(*0-ожидание полива, 1-подготовка1, 2-подготовка2, 3-полив, 4-слив, 5, 6 - вкл.подпитку*)
+	count_sum : WORD;
+	r_trig_enable, r_trig_stop : R_TRIG;
+	tmr_podg1, tmr_podg2, tmr_poliv, tmr_sliv: TON;
+	working : BOOL;
+
+END_VAR
+(* @END_DECLARATION := '0' *)
+r_trig_stop(CLK:=stop);
+IF r_trig_stop.Q THEN
+	state:=0;
+	tmr_podg1(IN:=FALSE, PT:=T#2m);
+	tmr_podg2(IN:=FALSE, PT:=T#10m);
+	tmr_poliv(IN:=FALSE, PT:=DWORD_TO_TIME(rasp.param.pt_Time*1000*60));
+	tmr_sliv(IN:=FALSE, PT:=T#15m);
+	act_doz := FALSE;
+	valve_circle := FALSE;
+	pump := FALSE;
+	valve:= FALSE;
+ELSE
+	CASE state OF
+		0:	r_trig_enable(CLK:=enable);
+			IF r_trig_enable.Q THEN
+				state:=1;
+				(*Запуск перемешивания*)
+				valve_circle := TRUE;
+				pump := TRUE;
+			END_IF
+		1:	tmr_podg1(IN:=TRUE, PT:=T#2m);
+			IF tmr_podg1.Q THEN
+				tmr_podg1(IN:=FALSE, PT:=T#2m);
+				state:=2;
+				act_doz:=TRUE;
+			END_IF
+		2:	tmr_podg2(IN:=TRUE, PT:=T#10m);
+			IF tmr_podg2.Q THEN
+				tmr_podg2(IN:=FALSE, PT:=T#10m);
+				state:=3;
+				valve_circle:=FALSE;
+				valve:=TRUE;
+				count_sum := 0;
+			END_IF
+		3:	tmr_poliv(IN:=TRUE, PT:=DWORD_TO_TIME(rasp.param.pt_Time*1000*60));
+			count_sum := count_sum + 1;
+			IF tmr_poliv.Q OR count_sum >= rasp.param.count_sp THEN
+				tmr_poliv(IN:=FALSE, PT:=DWORD_TO_TIME(rasp.param.pt_Time*1000*60));
+				state:=4;
+				valve:=FALSE;
+				pump := FALSE;
+			END_IF
+		4:	tmr_sliv(IN:=TRUE, PT:=T#15m);
+			IF tmr_sliv.Q THEN
+				state:= 5;
+				tmr_sliv(IN:=FALSE, PT:=T#15m);
+			END_IF
+		5:	podpitka := TRUE;
+			state:= 6;
+		6:	podpitka := FALSE;
+			state:= 0;
+	END_CASE
+END_IF
+
+
+
+working:=state>0;
+END_FUNCTION_BLOCK
