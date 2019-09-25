@@ -1,0 +1,91 @@
+
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '' *)
+(* @OBJECTFLAGS := '0, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+PROGRAM PLC_Clock
+
+VAR_INPUT
+	set_time: BOOL;	(*установить время*)
+	set_date: BOOL;	(*установить дату*)
+
+	HH: WORD;	(*новое значение - часы*)
+	MM: WORD;	(*новое значение - минуты*)
+	SS: WORD;	(*новое значение - секунды*)
+
+	D: WORD;	(*новое значение - день*)
+	M: WORD;	(*новое значение - месяц*)
+	Y: WORD;	(*новое значение - год*)
+END_VAR
+
+
+VAR_OUTPUT
+	Year:UINT;
+	Month:UINT;
+	Day: UINT;
+	hour: UINT;		(*часы*)
+	MINu: UINT;		(*минуты*)
+	Sec: UINT;
+
+END_VAR
+VAR
+
+(*элементы, необходимые для работы с часами*)
+	GetTime: CurTimeEx;
+	TimeAndDate: SystemTimeDate;
+	Sys_Time: SysTime64;
+
+
+END_VAR
+(* @END_DECLARATION := '0' *)
+(*Получение текущего времени*)
+TimeAndDate.Day :=0;
+TimeAndDate.DayOfWeek :=0;
+TimeAndDate.dwHighMsec :=0;
+TimeAndDate.dwLowMSecs :=0;
+TimeAndDate.Milliseconds :=0;
+TimeAndDate.Minute :=0;
+TimeAndDate.Second :=0;
+TimeAndDate.Hour :=0;
+TimeAndDate.Year :=0;
+TimeAndDate.Month :=0;
+Sys_time.ulHigh :=0;
+Sys_time.ulLow :=0;
+GetTime (SystemTime:=Sys_Time , TimeDate:= TimeAndDate);
+
+
+(*Если set_time - истина, то можно менять время*)
+
+IF set_time=TRUE THEN
+
+	TimeAndDate.Minute:=BCD_TO_INT(WORD_TO_BYTE(MM));
+	TimeAndDate.Second:=BCD_TO_INT(WORD_TO_BYTE(SS));
+	TimeAndDate.Hour:=BCD_TO_INT(WORD_TO_BYTE(HH));
+	GetTime (SystemTime:=Sys_Time , TimeDate:= TimeAndDate);
+
+END_IF
+
+(*Если set_date - истина, то можно менять дату*)
+
+IF set_date=TRUE THEN
+
+	TimeAndDate.Day:=BCD_TO_INT(WORD_TO_BYTE(D));
+	TimeAndDate.Month:=BCD_TO_INT(WORD_TO_BYTE(M));
+	TimeAndDate.Year:=BCD_TO_INT(WORD_TO_BYTE(Y));
+	GetTime (SystemTime:=Sys_Time , TimeDate:= TimeAndDate);
+
+END_IF
+
+(*вывод времени*)
+Year:=TimeAndDate.Year;
+Month:=TimeAndDate.Month;
+Day:=TimeAndDate.Day;
+hour:=TimeAndDate.hour;
+MINu:=TimeAndDate.minute;
+Sec:=TimeAndDate.Second;
+
+H_com:=hour;		(*час реального времени*)
+M_com:=MINu;		(*минуты реального времени*)
+S_com:=Sec;			(*секунды реального времени*)
+END_PROGRAM

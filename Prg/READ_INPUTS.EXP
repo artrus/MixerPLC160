@@ -6,12 +6,34 @@
 (* @SYMFILEFLAGS := '2048' *)
 PROGRAM Read_Inputs
 VAR
-	I: INT;
-
+	I, J: INT;
 	sum : REAL;
+	count_imit 		: BOOL;
+	power_on_imit 	: BOOL;
+	lev_25_imit 	: BOOL;
+	lev_50_imit		: BOOL;
+	lev_75_imit		: BOOL;
+	lev_100_imit	: BOOL;
+	BK_nas_imit		: BOOL;
+	OSTANOV_imit 	: BOOL;
+
+	sens_EC_imit	: REAL;
+	sens_PH_imit	: REAL;
+	sens_Trast_imit	: REAL;
+	sens_Pnas_imit	: REAL;
 END_VAR
 (* @END_DECLARATION := '0' *)
 (*Дискретные выходы*********************************************************************************************)
+IF fIMIT THEN
+DI_BUF.0:=count_imit;
+DI_BUF.1:=power_on_imit;
+DI_BUF.2:=lev_25_imit;
+DI_BUF.3:=lev_50_imit;
+DI_BUF.4:=lev_75_imit;
+DI_BUF.5:=lev_100_imit;
+DI_BUF.6:=BK_nas_imit;
+DI_BUF.7:=OSTANOV_imit;
+ELSE
 DI_BUF.0:=count;
 DI_BUF.1:=power_on;
 DI_BUF.2:=lev_25;
@@ -20,7 +42,7 @@ DI_BUF.4:=lev_75;
 DI_BUF.5:=lev_100;
 DI_BUF.6:=BK_nas;
 DI_BUF.7:=OSTANOV;
-
+END_IF
 
 FOR I:=0 TO CountDI-1 DO
 	DI_ARRAY[I].inVal:= WORD_TO_BOOL(DI_BUF AND 1);
@@ -42,17 +64,25 @@ END_FOR
 
 
 (*Аналоговые входы*********************************************************************************************)
+IF fIMIT THEN
+AI_BUF[0]:=sens_EC_imit;
+AI_BUF[1]:=sens_PH_imit;
+AI_BUF[2]:=sens_Trast_imit;
+AI_BUF[3]:=sens_Pnas_imit;
+ELSE
 AI_BUF[0]:=sens_EC;
 AI_BUF[1]:=sens_PH;
 AI_BUF[2]:=sens_Trast;
 AI_BUF[3]:=sens_Pnas;
+END_IF
+
 
 FOR I:=0 TO CountAI-1 DO
 (*Проверка на изменение числа выборок для усреднения, если изм. то чситаем заново*)
 	IF AI_ARRAY[I].private.last_n <> AI_ARRAY[I].n_Filtr THEN
 		AI_ARRAY[I].private.b_Complete:=FALSE;
 		AI_ARRAY[I].private.last_n:=AI_ARRAY[I].n_Filtr;
-		FOR i:=0 TO 32-1 DO
+		FOR J:=0 TO 32-1 DO
 			AI_ARRAY[I].private.arr_inputs[i] := 0;
 		END_FOR
 	END_IF
@@ -72,13 +102,14 @@ FOR I:=0 TO CountAI-1 DO
 	(*Если уже необходимое кол-во то высчитываем результат*)
 	IF 	AI_ARRAY[I].private.b_Complete THEN
 		sum:=0;
-		FOR i:=0 TO AI_ARRAY[I].n_Filtr -1  DO
+		FOR J:=0 TO AI_ARRAY[I].n_Filtr -1  DO
 			sum:=sum +	AI_ARRAY[I].private.arr_inputs[i];
 		END_FOR
 			AI_ARRAY[I].private.tempVal  :=sum / AI_ARRAY[I].n_Filtr;
 			AI_ARRAY[I].private.b_Complete:=FALSE;
 	END_IF
-END_FOR
 	(*Преобразование к границам*)
 	AI_ARRAY[I].outVal:=(AI_ARRAY[I].min_fiz*AI_ARRAY[I].private.MaxACP-AI_ARRAY[I].max_fiz*AI_ARRAY[I].private.MinACP)/(AI_ARRAY[I].private.MaxACP-AI_ARRAY[I].private.MinACP)+((AI_ARRAY[I].max_fiz-AI_ARRAY[I].min_fiz)/(AI_ARRAY[I].private.MaxACP-AI_ARRAY[I].private.MinACP))*AI_ARRAY[I].private.tempVal;
+END_FOR
+
 END_PROGRAM

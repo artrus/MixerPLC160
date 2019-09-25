@@ -5,6 +5,8 @@
 (* @OBJECTFLAGS := '0, 8' *)
 (* @SYMFILEFLAGS := '2048' *)
 VAR_GLOBAL
+	fINIT : BOOL:= FALSE;	(*Флаг инициализации ПЛК*)
+	fIMIT : BOOL:=TRUE;	(*Флаг глобальной имитации входов*)
 	H_com: UINT;		(*час реального времени*)
 	M_com: UINT;		(*минуты реального времени*)
 	S_com: UINT;		(*секунды реального времени*)
@@ -25,7 +27,7 @@ VAR_GLOBAL
 	DozVars : ARRAY[0..1] OF tDoz;	(*массив переменных дозаторов 0 - ес, 1 - ph*)
 	Rasp_ARRAY : ARRAY [0..31] OF tRasp;
 
-	global_auto_manual	: BOOL;	(*глобальны авто/ручн режим*)
+
 END_VAR
 
 (* @OBJECT_END := 'Global_Variables' *)

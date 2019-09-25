@@ -6,10 +6,35 @@
 (* @SYMFILEFLAGS := '2048' *)
 PROGRAM PLC_PRG
 VAR
+	I : INT;
+	Pump : fbPump;
+	Podpitka : fbPodpitka;
+	Doz : ARRAY [0..1] OF fbDoz;
+
 END_VAR
 (* @END_DECLARATION := '0' *)
+IF NOT fINIT THEN INIT; fINIT:=TRUE; END_IF;	(*Инициализация на первом цикле*)
+PLC_Clock(set_time:= TRUE, set_date:= TRUE, HH:=chas, MM:=minut, SS:=sekund, D:=den, M:=mes, Y:=god);	 (*Синхронизируем время с панелью*)
+
 Read_Inputs;
+(*
+raspisanie;
 
+Podpitka();
+
+
+Pump();
+*)
 Write_Outputs;
+(*
 
+
+(*
+	Doz[I]( in:=DozVars[I],
+			enable :=TRUE,
+			reset :=TRUE,
+			auto_manual:=TRUE,
+			);
+*)
+*)
 END_PROGRAM

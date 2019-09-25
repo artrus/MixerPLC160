@@ -2,11 +2,56 @@
 
 (* @NESTEDCOMMENTS := 'Yes' *)
 (* @PATH := '' *)
-(* @OBJECTFLAGS := '8, 8' *)
+(* @OBJECTFLAGS := '0, 8' *)
 (* @SYMFILEFLAGS := '2048' *)
 PROGRAM INIT
 VAR
 END_VAR
 (* @END_DECLARATION := '0' *)
 
+DI_ARRAY[0].timeDreb := T#10ms;
+DI_ARRAY[1].timeDreb := T#1s;
+DI_ARRAY[2].timeDreb := T#500ms;
+DI_ARRAY[3].timeDreb := T#500ms;
+DI_ARRAY[4].timeDreb := T#500ms;
+DI_ARRAY[5].timeDreb := T#500ms;
+DI_ARRAY[6].timeDreb := T#1s;
+DI_ARRAY[7].timeDreb := T#1s;
+
+AI_ARRAY[0].min_fiz	:=0;
+AI_ARRAY[0].max_fiz	:=10;
+AI_ARRAY[0].private.MinACP := 0;
+AI_ARRAY[0].private.MaxACP := 20000;
+AI_ARRAY[0].n_Filtr :=	4;
+AI_ARRAY[0].TimeFiltr := T#250ms;
+
+AI_ARRAY[1].min_fiz	:=0;
+AI_ARRAY[1].max_fiz	:=10;
+AI_ARRAY[1].private.MinACP := 0;
+AI_ARRAY[1].private.MaxACP := 20000;
+AI_ARRAY[1].n_Filtr :=	4;
+AI_ARRAY[1].TimeFiltr := T#250ms;
+
+AI_ARRAY[2].min_fiz	:=0;
+AI_ARRAY[2].max_fiz	:=10;
+AI_ARRAY[2].private.MinACP := 0;
+AI_ARRAY[2].private.MaxACP := 20000;
+AI_ARRAY[2].n_Filtr :=	4;
+AI_ARRAY[2].TimeFiltr := T#250ms;
+
+AI_ARRAY[3].min_fiz	:=0;
+AI_ARRAY[3].max_fiz	:=10;
+AI_ARRAY[3].private.MinACP := 0;
+AI_ARRAY[3].private.MaxACP := 20000;
+AI_ARRAY[3].n_Filtr :=	4;
+AI_ARRAY[3].TimeFiltr := T#250ms;
+
+
+DO_ARRAY[0].fEnable := TRUE;
+DO_ARRAY[1].fEnable := TRUE;
+DO_ARRAY[2].fEnable := TRUE;
+DO_ARRAY[3].fEnable := TRUE;
+DO_ARRAY[4].fEnable := TRUE;
+DO_ARRAY[5].fEnable := TRUE;
+DO_ARRAY[6].fEnable := TRUE;
 END_PROGRAM

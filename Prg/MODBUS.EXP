@@ -1,0 +1,21 @@
+
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '' *)
+(* @OBJECTFLAGS := '8, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+PROGRAM Modbus
+VAR
+END_VAR
+(* @END_DECLARATION := '0' *)
+
+
+
+
+
+
+
+
+
+
+END_PROGRAM

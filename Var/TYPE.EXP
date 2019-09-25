@@ -81,10 +81,8 @@ STRUCT
 	pt_max_imp : DWORD;		(*макс время импульса*)
 	pt_min_pause : DWORD;	(*мин время паузы*)
 	pt_max_pause : DWORD;	(*макс время паузы*)
-	k_imp	: WORD;
-	k_pause	: WORD;
-	bManual : BOOL;
-	pt_manual : DWORD;
+	bManual : BOOL;			(*Открытие клапана в ручном режиме*)
+	pt_manual : DWORD;		(*Время работы в ручном режиме*)
 END_STRUCT
 END_TYPE
 (* @END_DECLARATION := '0' *)

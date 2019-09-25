@@ -62,12 +62,4 @@ out_gr1.4 :=DO_ARRAY[20].fWriteVal;
 out_gr1.5 :=DO_ARRAY[21].fWriteVal;
 out_gr1.6 :=DO_ARRAY[22].fWriteVal;
 out_gr1.7 :=DO_ARRAY[23].fWriteVal;
-out_gr1.8 :=DO_ARRAY[24].fWriteVal;
-out_gr1.9 :=DO_ARRAY[25].fWriteVal;
-out_gr1.10 :=DO_ARRAY[26].fWriteVal;
-out_gr1.11 :=DO_ARRAY[27].fWriteVal;
-out_gr1.12 :=DO_ARRAY[28].fWriteVal;
-out_gr1.13 :=DO_ARRAY[29].fWriteVal;
-out_gr1.14 :=DO_ARRAY[30].fWriteVal;
-out_gr1.15 :=DO_ARRAY[31].fWriteVal;
 END_PROGRAM
