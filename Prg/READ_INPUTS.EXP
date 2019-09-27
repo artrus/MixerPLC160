@@ -24,7 +24,7 @@ VAR
 END_VAR
 (* @END_DECLARATION := '0' *)
 (*Дискретные выходы*********************************************************************************************)
-IF fIMIT THEN
+IF fIMIT_DI THEN
 DI_BUF.0:=count_imit;
 DI_BUF.1:=power_on_imit;
 DI_BUF.2:=lev_25_imit;
@@ -64,7 +64,7 @@ END_FOR
 
 
 (*Аналоговые входы*********************************************************************************************)
-IF fIMIT THEN
+IF fIMIT_AI THEN
 AI_BUF[0]:=sens_EC_imit;
 AI_BUF[1]:=sens_PH_imit;
 AI_BUF[2]:=sens_Trast_imit;
@@ -103,7 +103,7 @@ FOR I:=0 TO CountAI-1 DO
 	IF 	AI_ARRAY[I].private.b_Complete THEN
 		sum:=0;
 		FOR J:=0 TO AI_ARRAY[I].n_Filtr -1  DO
-			sum:=sum +	AI_ARRAY[I].private.arr_inputs[i];
+			sum:=sum +	AI_ARRAY[I].private.arr_inputs[J];
 		END_FOR
 			AI_ARRAY[I].private.tempVal  :=sum / AI_ARRAY[I].n_Filtr;
 			AI_ARRAY[I].private.b_Complete:=FALSE;

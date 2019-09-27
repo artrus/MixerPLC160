@@ -7,78 +7,89 @@
 FUNCTION_BLOCK fbPump
 VAR_INPUT
 	on : BOOL;
-	off : BOOL;
 	block : BOOL; (*Блокировка пуска*)
 	reset : BOOL; (*Сброс аварии*)
+	ptStartPump : WORD; (*Время на старт насоса в секундах*)
 END_VAR
 VAR_OUTPUT
 	status : BOOL; (*Включен/Выключен*)
-	avar : WORD; (*Тип аварии 0 - нет аварии, .0 - Нет сигнала от пускателя, .1 - нет давления , .2 - логическая блокировка*)
-	warn : WORD; (*Предупреждение 0 нет предупреждения, .0 - Две команды ON OFF*)
+	avar_bk : BOOL;
+	avar_press : BOOL;
+	avar_log : BOOL;
+	warn_low_press : BOOL;
 END_VAR
 VAR
 	state : WORD;		(*0- откл, 1-пуск,  2-работа 3-блокировка*)
 	timerOnPump : TON;
-	PTOnPump : TIME := T#3s;
 	di_BK_pump : POINTER TO BOOL;
 	do_pump_actVal : POINTER TO BOOL;
 	do_pump_newVal : POINTER TO BOOL;
 	ai_Ppump : POINTER TO REAL;
-	sp_PavarPump : POINTER TO REAL;
-	r_trig_on : R_TRIG;
-	r_trig_off : R_TRIG;
-
+	sp_PavarPump : POINTER TO WORD;
+	sp_PwarnPump : POINTER TO WORD;
+	r_trig_on, r_trig_reset : R_TRIG;
+	avar : WORD; (*Тип аварии 0 - нет аварии, .0 - Нет сигнала от пускателя, .1 - нет давления , .2 - логическая блокировка*)
+	warn : WORD; (*Предупреждение 0 нет предупреждения, .0 - Две команды ON OFF*)
 END_VAR
 (* @END_DECLARATION := '0' *)
 di_BK_pump := ADR(DI_ARRAY[6].outVal);
 do_pump_actVal:=ADR(DO_ARRAY[0].fActVal);
 do_pump_newVal:=ADR(DO_ARRAY[0].fNewVal);
 ai_Ppump:= ADR(AI_ARRAY[3].outVal);
-(*sp_PavarPump:=*)
+sp_PavarPump:=ADR(low_avar_Pnas);
+sp_PwarnPump:=ADR(low_warn_Pnas);
 r_trig_on(CLK:= on);
-r_trig_off(CLK:= off);
+r_trig_reset(CLK:= reset);
 IF block THEN
-	do_pump_actVal^:=TRUE ; do_pump_newVal^:= FALSE;
+	do_pump_actVal^:=FALSE ; do_pump_newVal^:= TRUE;
 	state :=3;
 	avar.2:= TRUE;
 END_IF
-IF ON AND OFF THEN
-	warn.0 :=TRUE;
-END_IF
+
 CASE state OF
 	0:	IF r_trig_on.Q  THEN	(*Вкл насос по команде*)
 			state :=1;
 			do_pump_actVal^:=TRUE ; do_pump_newVal^:= TRUE;	(*Вкл насос*)
 		END_IF
 
-	1:	timerOnPump(IN:=TRUE, PT:=PTOnPump); (*Пуск насоса, не отслеживаем пускатель и давление*)
+	1:	timerOnPump(IN:=TRUE, PT:=DWORD_TO_TIME(ptStartPump*1000)); (*Пуск насоса, не отслеживаем пускатель и давление*)
 		IF timerOnPump.Q  THEN
 			state:=2;
-			timerOnPump(IN:=FALSE, PT:=PTOnPump);
+			timerOnPump(IN:=FALSE, PT:=DWORD_TO_TIME(ptStartPump*1000));
 		END_IF
 
 	2:	IF NOT di_BK_pump^ OR ai_Ppump^ < sp_PavarPump^ THEN (*Если нет пускателя или давление ниже минимального аварийного то блокировка насоса*)
 			state :=3;
 			avar.0 := NOT di_BK_pump^;
 			avar.1 :=  ai_Ppump^ < sp_PavarPump^;
-			do_pump_actVal^:=TRUE ; do_pump_newVal^:= FALSE; (*Откл насос*)
+			do_pump_actVal^:=FALSE ; do_pump_newVal^:= TRUE; (*Откл насос*)
 		END_IF
 
-		IF r_trig_off.Q THEN	(*Откл насос по команде*)
+		warn_low_press := ai_Ppump^ < sp_PwarnPump^;
+
+		IF NOT on THEN	(*Откл насос по команде*)
 			state:=0;
-			do_pump_actVal^:=TRUE ; do_pump_newVal^:= FALSE; (*Откл насос*)
+			do_pump_actVal^:=FALSE ; do_pump_newVal^:= TRUE; (*Откл насос*)
 		END_IF
 
 		(*Насос заблокирован*)
-	3: 	IF reset THEN
+	3: 	IF r_trig_reset.Q THEN
 			state := 0;
 			avar:= 0;
 			warn:=0;
+			do_pump_actVal^:=FALSE ; do_pump_newVal^:= TRUE; (*Откл насос*)
+			timerOnPump(IN:=FALSE, PT:=DWORD_TO_TIME(ptStartPump*1000));
 		END_IF
 
 
 END_CASE
 
+status:=state = 1 OR state = 2;
+
+
+avar_bk := avar.0;
+avar_press:= avar.1;
+avar_log := avar.2;
 
 
 END_FUNCTION_BLOCK
