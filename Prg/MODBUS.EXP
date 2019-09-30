@@ -2,20 +2,66 @@
 
 (* @NESTEDCOMMENTS := 'Yes' *)
 (* @PATH := '' *)
-(* @OBJECTFLAGS := '8, 8' *)
+(* @OBJECTFLAGS := '0, 8' *)
 (* @SYMFILEFLAGS := '2048' *)
 PROGRAM Modbus
 VAR
 END_VAR
 (* @END_DECLARATION := '0' *)
 
+ind_NOT_POLIV := NOT ind_POLIV;
+ind_manual_visible := NOT global_auto_manual;
+P_nas_to_panel:=REAL_TO_WORD(AI_ARRAY[3].outVal);
+ind_temp_water:= AI_ARRAY[2].outVal;
+skip_poliv:=FALSE;
+(*EC*)
+AI_ARRAY[0].min_fiz :=low_fiz_EC;
+AI_ARRAY[0].max_fiz :=high_fiz_EC;
+(*sdvig_fiz_EC*)
+
+(*PH*)
+AI_ARRAY[1].min_fiz :=low_fiz_PH;
+AI_ARRAY[1].max_fiz :=high_fiz_PH;
+(*sdvig_fiz_PH*)
+
+(*Temp*)
+AI_ARRAY[2].min_fiz :=low_fiz_temp;
+AI_ARRAY[2].max_fiz :=high_fiz_temp;
+(*sdvig_fiz_temp*)
+
+(*Pump*)
+AI_ARRAY[3].min_fiz :=WORD_TO_REAL(low_fiz_Pnas);
+AI_ARRAY[3].max_fiz :=WORD_TO_REAL(high_fiz_Pnas);
+(*sdvig_fiz_Pnas*)
 
 
+	DozVars[0].param.sp_conc :=sp_EC;					(*уставка концентрации*)
+	DozVars[0].param.sp_hyst :=hyst_EC;					(*гистерезис*)
+	DozVars[0].param.sp_min_avr :=sp_min_avar_EC;		(*мин аварийная концентрация*)
+	DozVars[0].param.sp_max_avr :=sp_max_avr_EC;		(*макс аварийна концентрация*)
+	DozVars[0].param.sp_min_warn :=sp_min_warn_EC;		(*минимальная концентрация для предупреждения*)
+	DozVars[0].param.sp_max_warn :=sp_max_warn_EC;		(*максимальная концентрация для предупруеждения*)
+	DozVars[0].param.pt_min_imp :=tim_min_imp_EC;		(*мин время импульса*)
+	DozVars[0].param.pt_max_imp :=tim_max_imp_EC;		(*макс время импульса*)
+	DozVars[0].param.pt_min_pause :=tim_min_pause_EC;	(*мин время паузы*)
+	DozVars[0].param.pt_max_pause :=tim_max_pause_EC; 	(*макс время паузы*)
+	ind_time_imp_EC:=DozVars[0].cur_time_imp;
+	ind_time_pause_EC:=DozVars[0].cur_time_pause;
+
+	DozVars[1].param.sp_conc :=sp_PH;					(*уставка концентрации*)
+	DozVars[1].param.sp_hyst :=hyst_PH;					(*гистерезис*)
+	DozVars[1].param.sp_min_avr :=sp_min_avar_PH;		(*мин аварийная концентрация*)
+	DozVars[1].param.sp_max_avr :=sp_max_avr_PH;		(*макс аварийна концентрация*)
+	DozVars[1].param.sp_min_warn :=sp_min_warn_PH;		(*минимальная концентрация для предупреждения*)
+	DozVars[1].param.sp_max_warn :=sp_max_warn_PH;		(*максимальная концентрация для предупруеждения*)
+	DozVars[1].param.pt_min_imp :=tim_min_imp_PH;		(*мин время импульса*)
+	DozVars[1].param.pt_max_imp :=tim_max_imp_PH;		(*макс время импульса*)
+	DozVars[1].param.pt_min_pause :=tim_min_pause_PH;	(*мин время паузы*)
+	DozVars[1].param.pt_max_pause :=tim_max_pause_PH; 	(*макс время паузы*)
+	ind_time_imp_PH:=DozVars[1].cur_time_imp;
+	ind_time_pause_PH:=DozVars[1].cur_time_pause;
 
 
-
-
-
-
-
+ind_cur_EC := AI_ARRAY[0].outVal;
+ind_cur_PH := AI_ARRAY[1].outVal;
 END_PROGRAM

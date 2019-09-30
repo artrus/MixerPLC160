@@ -6,82 +6,87 @@
 (* @SYMFILEFLAGS := '2048' *)
 FUNCTION_BLOCK fbPoliv
 VAR_INPUT
-	enable : BOOL;
+	start : BOOL;
 	stop : BOOL;
-	rasp : tRasp;
-	count : BOOL;
+	count_sp: WORD;	 (*Уставка полива*)
+	pt_podgotov1, pt_podgotov2, pt_poliv, pt_sliv : WORD;
+	skip : BOOL;	(*Пропустить полив*)
 END_VAR
 VAR_OUTPUT
-	valve : BOOL;
-	valve_circle : BOOL;
-	pump : BOOL;
-	act_doz : BOOL;
-	podpitka : BOOL;
+	valve : BOOL;			(*вкл клапана*)
+	pump : BOOL;			(*вкл насоса*)
+	act_doz : BOOL;			(*вкл дозаторов*)
+	status_poliv : WORD;	(*отображение статуса полива*)
+	fPoliv : BOOL;  (*флаг идет полив*)
+	skiped: BOOL;	(*был пропущен полив*)
 END_VAR
 VAR
 	state : INT;	(*0-ожидание полива, 1-подготовка1, 2-подготовка2, 3-полив, 4-слив, 5, 6 - вкл.подпитку*)
+	in_count : POINTER TO BOOL;	 (*Счетчик полива*)
+	valve_circle_Act, valve_circle_New : POINTER TO BOOL;
 	count_sum : WORD;
-	r_trig_enable, r_trig_stop : R_TRIG;
+	r_trig_start, r_trig_stop, r_trig_count, r_trig_skip : R_TRIG;
 	tmr_podg1, tmr_podg2, tmr_poliv, tmr_sliv: TON;
-	working : BOOL;
 
 END_VAR
 (* @END_DECLARATION := '0' *)
+in_count:=ADR(DI_ARRAY[0].outVal);
+valve_circle_Act:=ADR(DO_ARRAY[1].fActVal);
+valve_circle_New:=ADR(DO_ARRAY[1].fNewVal);
+r_trig_count(CLK:=in_count^);
 r_trig_stop(CLK:=stop);
-IF r_trig_stop.Q THEN
+r_trig_skip(CLK:=skip);
+IF r_trig_stop.Q OR r_trig_skip.Q THEN
 	state:=0;
-	tmr_podg1(IN:=FALSE, PT:=T#2m);
-	tmr_podg2(IN:=FALSE, PT:=T#10m);
-	tmr_poliv(IN:=FALSE, PT:=DWORD_TO_TIME(rasp.param.pt_Time*1000*60));
-	tmr_sliv(IN:=FALSE, PT:=T#15m);
+	tmr_podg1(IN:=FALSE, PT:=DWORD_TO_TIME(pt_podgotov1*60*1000));
+	tmr_podg2(IN:=FALSE, PT:=DWORD_TO_TIME(pt_podgotov2*60*1000));
+	tmr_poliv(IN:=FALSE, PT:=DWORD_TO_TIME(pt_poliv*1000*60));
+	tmr_sliv(IN:=FALSE,  PT:=DWORD_TO_TIME(pt_sliv*1000*60));
 	act_doz := FALSE;
-	valve_circle := FALSE;
+	valve_circle_Act^:=FALSE; valve_circle_New^:=TRUE;
 	pump := FALSE;
 	valve:= FALSE;
+	IF r_trig_skip.Q THEN skiped :=TRUE; END_IF
 ELSE
 	CASE state OF
-		0:	r_trig_enable(CLK:=enable);
-			IF r_trig_enable.Q THEN
+		0:	r_trig_start(CLK:=start);
+			IF r_trig_start.Q THEN
 				state:=1;
 				(*Запуск перемешивания*)
-				valve_circle := TRUE;
+				valve_circle_Act^:=TRUE; valve_circle_New^:=TRUE;
 				pump := TRUE;
+				skiped:=FALSE;
 			END_IF
-		1:	tmr_podg1(IN:=TRUE, PT:=T#2m);
+		1:	tmr_podg1(IN:=TRUE, PT:=DWORD_TO_TIME(pt_podgotov1*60*1000));
 			IF tmr_podg1.Q THEN
-				tmr_podg1(IN:=FALSE, PT:=T#2m);
+				tmr_podg1(IN:=FALSE, PT:=DWORD_TO_TIME(pt_podgotov1*60*1000));
 				state:=2;
 				act_doz:=TRUE;
 			END_IF
-		2:	tmr_podg2(IN:=TRUE, PT:=T#10m);
+		2:	tmr_podg2(IN:=TRUE, PT:=DWORD_TO_TIME(pt_podgotov2*60*1000));
 			IF tmr_podg2.Q THEN
-				tmr_podg2(IN:=FALSE, PT:=T#10m);
+				tmr_podg2(IN:=FALSE, PT:=DWORD_TO_TIME(pt_podgotov2*60*1000));
 				state:=3;
-				valve_circle:=FALSE;
+				valve_circle_Act^:=FALSE; valve_circle_New^:=TRUE;
 				valve:=TRUE;
 				count_sum := 0;
+				act_doz:=FALSE;
 			END_IF
-		3:	tmr_poliv(IN:=TRUE, PT:=DWORD_TO_TIME(rasp.param.pt_Time*1000*60));
-			count_sum := count_sum + 1;
-			IF tmr_poliv.Q OR count_sum >= rasp.param.count_sp THEN
-				tmr_poliv(IN:=FALSE, PT:=DWORD_TO_TIME(rasp.param.pt_Time*1000*60));
+		3:	tmr_poliv(IN:=TRUE, PT:=DWORD_TO_TIME(pt_poliv*1000*60));
+			IF r_trig_count.Q THEN count_sum := count_sum + 1; END_IF
+			IF tmr_poliv.Q OR count_sum >= count_sp THEN
+				tmr_poliv(IN:=FALSE, PT:=DWORD_TO_TIME(pt_poliv*1000*60));
 				state:=4;
 				valve:=FALSE;
-				pump := FALSE;
+				pump :=FALSE;
 			END_IF
-		4:	tmr_sliv(IN:=TRUE, PT:=T#15m);
+		4:	tmr_sliv(IN:=TRUE, PT:=DWORD_TO_TIME(pt_sliv*1000*60));
 			IF tmr_sliv.Q THEN
-				state:= 5;
-				tmr_sliv(IN:=FALSE, PT:=T#15m);
+				state:= 0;
+				tmr_sliv(IN:=FALSE, PT:=DWORD_TO_TIME(pt_sliv*1000*60));
 			END_IF
-		5:	podpitka := TRUE;
-			state:= 6;
-		6:	podpitka := FALSE;
-			state:= 0;
 	END_CASE
+status_poliv := state;
 END_IF
-
-
-
-working:=state>0;
+fPoliv:= state>0;
 END_FUNCTION_BLOCK

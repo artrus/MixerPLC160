@@ -10,6 +10,7 @@ VAR_INPUT
 	block : BOOL; (*Блокировка пуска*)
 	reset : BOOL; (*Сброс аварии*)
 	ptStartPump : WORD; (*Время на старт насоса в секундах*)
+	analysis_avar : BOOL;	(*Анализ аварий*)
 END_VAR
 VAR_OUTPUT
 	status : BOOL; (*Включен/Выключен*)
@@ -58,15 +59,15 @@ CASE state OF
 			timerOnPump(IN:=FALSE, PT:=DWORD_TO_TIME(ptStartPump*1000));
 		END_IF
 
-	2:	IF NOT di_BK_pump^ OR ai_Ppump^ < sp_PavarPump^ THEN (*Если нет пускателя или давление ниже минимального аварийного то блокировка насоса*)
-			state :=3;
-			avar.0 := NOT di_BK_pump^;
-			avar.1 :=  ai_Ppump^ < sp_PavarPump^;
-			do_pump_actVal^:=FALSE ; do_pump_newVal^:= TRUE; (*Откл насос*)
-		END_IF
-
-		warn_low_press := ai_Ppump^ < sp_PwarnPump^;
-
+		2:	IF analysis_avar THEN
+				IF NOT di_BK_pump^ OR ai_Ppump^ < sp_PavarPump^ THEN (*Если нет пускателя или давление ниже минимального аварийного то блокировка насоса*)
+					state :=3;
+					avar.0 := NOT di_BK_pump^;
+					avar.1 :=  ai_Ppump^ < sp_PavarPump^;
+					do_pump_actVal^:=FALSE ; do_pump_newVal^:= TRUE; (*Откл насос*)
+				END_IF
+				warn_low_press := ai_Ppump^ < sp_PwarnPump^;
+			END_IF
 		IF NOT on THEN	(*Откл насос по команде*)
 			state:=0;
 			do_pump_actVal^:=FALSE ; do_pump_newVal^:= TRUE; (*Откл насос*)

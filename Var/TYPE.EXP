@@ -56,8 +56,8 @@ END_TYPE
 TYPE tDoz :
 STRUCT
 	cur_conc : REAL;
-	cur_time_imp : DWORD;	(*Расчитаное время импульса*)
-	cur_time_pause : DWORD;	(*Расчитанное время паузы*)
+	cur_time_imp : WORD;	(*Расчитаное время импульса*)
+	cur_time_pause : WORD;	(*Расчитанное время паузы*)
 	valve : BOOL; (*состояние клапана*)
 	param : tDozParam;
 	avar : WORD;	(*.0 - Макс уровень .1 - мин уровень*)

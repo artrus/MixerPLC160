@@ -1,0 +1,59 @@
+
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '' *)
+(* @OBJECTFLAGS := '0, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+PROGRAM Control_ValveABC
+VAR
+	do_valve_A_Act : POINTER TO BOOL;
+	do_valve_A_New : POINTER TO BOOL;
+	do_valve_B_Act : POINTER TO BOOL;
+	do_valve_B_New : POINTER TO BOOL;
+	do_valve_C_Act : POINTER TO BOOL;
+	do_valve_C_New : POINTER TO BOOL;
+	do_valve_cycle_Act : POINTER TO BOOL;
+	do_valve_cycle_New : POINTER TO BOOL;
+	tmr_valveA, tmr_vavleB, tmr_valveC : TP;
+	rtrig_global_auto_manual : R_TRIG;
+END_VAR
+(* @END_DECLARATION := '0' *)
+do_valve_A_Act :=ADR(DO_ARRAY[2].fActVal);
+do_valve_A_New :=ADR(DO_ARRAY[2].fNewVal);
+do_valve_B_Act :=ADR(DO_ARRAY[3].fActVal);
+do_valve_B_New :=ADR(DO_ARRAY[3].fNewVal);
+do_valve_C_Act :=ADR(DO_ARRAY[4].fActVal);
+do_valve_C_New :=ADR(DO_ARRAY[4].fNewVal);
+do_valve_cycle_Act  :=ADR(DO_ARRAY[1].fActVal);
+do_valve_cycle_New  :=ADR(DO_ARRAY[1].fNewVal);
+rtrig_global_auto_manual(CLK:=global_auto_manual);
+IF rtrig_global_auto_manual.Q THEN
+	do_valve_A_Act^ := FALSE;
+	do_valve_B_Act^ := FALSE;
+	do_valve_C_Act^ := FALSE;
+	tmr_valveA(IN:=FALSE, PT:=DWORD_TO_TIME(t_man_A));
+	tmr_vavleB(IN:=FALSE, PT:=DWORD_TO_TIME(t_man_B));
+	tmr_valveC(IN:=FALSE, PT:=DWORD_TO_TIME(t_man_C));
+END_IF
+IF global_auto_manual THEN
+	do_valve_A_Act^ := arr_valve[0];
+	do_valve_B_Act^ := arr_valve[0];
+	do_valve_C_Act^ := arr_valve[1];
+ELSE
+	tmr_valveA(IN:=m_A, PT:=DWORD_TO_TIME(t_man_A));
+	tmr_vavleB(IN:=m_B, PT:=DWORD_TO_TIME(t_man_B));
+	tmr_valveC(IN:=m_C, PT:=DWORD_TO_TIME(t_man_C));
+	do_valve_A_Act^ := tmr_valveA.Q;
+	do_valve_B_Act^ := tmr_vavleB.Q;
+	do_valve_C_Act^ := tmr_valveC.Q;
+END_IF
+ind_ready_EC:=arr_ready_rastvor[0];
+ind_ready_pH:=arr_ready_rastvor[1];
+ind_A:=do_valve_A_Act^;
+ind_B:=do_valve_B_Act^;
+ind_C:=do_valve_C_Act^;
+ind_cykl:=do_valve_cycle_Act^;
+ind_ready_mix:=ind_ready_EC AND ind_ready_pH;
+do_valve_A_New^ :=TRUE; do_valve_B_New^ :=TRUE; do_valve_C_New^ :=TRUE;
+
+END_PROGRAM

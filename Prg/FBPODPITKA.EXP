@@ -37,7 +37,7 @@ VAR
 	rtrigAutoManual : R_TRIG;
 	ftrigAutoManual : F_TRIG;
 	di_arr : ARRAY [0..3] OF BOOL;
-	state : INT;  (*0 - начальный запуск 1 - идет подпитка 2-остановлено и ожидание*)
+	state : INT := 2;  (*0 - начальный запуск 1 - идет подпитка 2-остановлено и ожидание*)
 	I: INT;
 
 END_VAR

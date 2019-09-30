@@ -6,7 +6,8 @@
 (* @SYMFILEFLAGS := '2048' *)
 VAR_GLOBAL
 	fINIT : BOOL:= FALSE;	(*Флаг инициализации ПЛК*)
-	fIMIT : BOOL:=TRUE;	(*Флаг глобальной имитации входов*)
+	fIMIT_DI : BOOL:=FALSE;	(*Флаг глобальной имитации дискретных входов*)
+	fIMIT_AI : BOOL:=TRUE;	(*Флаг глобальной имитации аналоговых входов*)
 	H_com: UINT;		(*час реального времени*)
 	M_com: UINT;		(*минуты реального времени*)
 	S_com: UINT;		(*секунды реального времени*)
@@ -26,7 +27,9 @@ VAR_GLOBAL
 	AI_ARRAY : ARRAY[0..3] OF tAI; (*массив AI*)
 	DozVars : ARRAY[0..1] OF tDoz;	(*массив переменных дозаторов 0 - ес, 1 - ph*)
 	Rasp_ARRAY : ARRAY [0..31] OF tRasp;
-
+	arr_valve_blocked : ARRAY [0..1] OF BOOL;
+	arr_valve : ARRAY [0..1] OF BOOL;
+	arr_ready_rastvor : ARRAY [0..1] OF BOOL;
 
 END_VAR
 
