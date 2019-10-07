@@ -7,86 +7,121 @@
 FUNCTION_BLOCK fbPoliv
 VAR_INPUT
 	start : BOOL;
-	stop : BOOL;
-	count_sp: WORD;	 (*Уставка полива*)
-	pt_podgotov1, pt_podgotov2, pt_poliv, pt_sliv : WORD;
-	skip : BOOL;	(*Пропустить полив*)
+	skip : BOOL;				(*Пропустить полив*)
+	index_poliv : WORD;
+	in_ready_mix : BOOL;		(*Раствор готов*)
+	pt_podgotov1, pt_podgotov2, pt_sliv : WORD;
 END_VAR
 VAR_OUTPUT
-	valve : BOOL;			(*вкл клапана*)
-	pump : BOOL;			(*вкл насоса*)
-	act_doz : BOOL;			(*вкл дозаторов*)
-	status_poliv : WORD;	(*отображение статуса полива*)
-	fPoliv : BOOL;  (*флаг идет полив*)
-	skiped: BOOL;	(*был пропущен полив*)
+	out_working : BOOL;			(*вкл клапана полива*)
+	out_valve_poliv_BYTE : BYTE;
+	out_valve_cyrcle : BOOL;	(*вкл клапана циркуляции*)
+	out_pump : BOOL;			(*вкл насоса*)
+	out_act_doz : BOOL;			(*вкл дозаторов*)
+	out_act_analis_doz : BOOL;	(*вкл авнвлиза аварий дозаторов*)
+	out_status_poliv : WORD;	(*отображение статуса полива*)
+	out_skiped: BOOL;			(*был пропущен полив*)
+	out_avar_timeout_mix : BOOL; (*авария - раствор не приготовился за время*)
 END_VAR
 VAR
-	state : INT;	(*0-ожидание полива, 1-подготовка1, 2-подготовка2, 3-полив, 4-слив, 5, 6 - вкл.подпитку*)
-	in_count : POINTER TO BOOL;	 (*Счетчик полива*)
-	valve_circle_Act, valve_circle_New : POINTER TO BOOL;
-	count_sum : WORD;
-	r_trig_start, r_trig_stop, r_trig_count, r_trig_skip : R_TRIG;
+	state : INT;				(*0-ожидание полива, 1-подготовка1, 2-подготовка2, 3-полив, 4-слив*)
+	count_sum : DWORD;
+	r_trig_start, r_trig_count, r_trig_skip : R_TRIG;
 	tmr_podg1, tmr_podg2, tmr_poliv, tmr_sliv: TON;
-
+	tmr_ready_mix : TON;
+	pt_poliv, count_sp : DWORD;
+	tmr_infoPT : TON;
+	ind_time_poliv_1_temp : DWORD;
+	sum_time : DWORD;
 END_VAR
 (* @END_DECLARATION := '0' *)
-in_count:=ADR(DI_ARRAY[0].outVal);
-valve_circle_Act:=ADR(DO_ARRAY[1].fActVal);
-valve_circle_New:=ADR(DO_ARRAY[1].fNewVal);
-r_trig_count(CLK:=in_count^);
-r_trig_stop(CLK:=stop);
+
+pt_poliv:=Rasp_ARRAY[index_poliv].param.pt_Time; (*Время полива*)
+count_sp:=REAL_TO_DWORD((Rasp_ARRAY[index_poliv].param.count_sp*1000)/k_count); (*Счётчик полива*)
+
+r_trig_start(CLK:=start);
 r_trig_skip(CLK:=skip);
-IF r_trig_stop.Q OR r_trig_skip.Q THEN
+r_trig_count(CLK:=di_in_count^);
+IF  r_trig_start.Q OR r_trig_skip.Q THEN
 	state:=0;
 	tmr_podg1(IN:=FALSE, PT:=DWORD_TO_TIME(pt_podgotov1*60*1000));
 	tmr_podg2(IN:=FALSE, PT:=DWORD_TO_TIME(pt_podgotov2*60*1000));
 	tmr_poliv(IN:=FALSE, PT:=DWORD_TO_TIME(pt_poliv*1000*60));
 	tmr_sliv(IN:=FALSE,  PT:=DWORD_TO_TIME(pt_sliv*1000*60));
-	act_doz := FALSE;
-	valve_circle_Act^:=FALSE; valve_circle_New^:=TRUE;
-	pump := FALSE;
-	valve:= FALSE;
-	IF r_trig_skip.Q THEN skiped :=TRUE; END_IF
-ELSE
-	CASE state OF
-		0:	r_trig_start(CLK:=start);
-			IF r_trig_start.Q THEN
-				state:=1;
-				(*Запуск перемешивания*)
-				valve_circle_Act^:=TRUE; valve_circle_New^:=TRUE;
-				pump := TRUE;
-				skiped:=FALSE;
-			END_IF
-		1:	tmr_podg1(IN:=TRUE, PT:=DWORD_TO_TIME(pt_podgotov1*60*1000));
-			IF tmr_podg1.Q THEN
-				tmr_podg1(IN:=FALSE, PT:=DWORD_TO_TIME(pt_podgotov1*60*1000));
-				state:=2;
-				act_doz:=TRUE;
-			END_IF
-		2:	tmr_podg2(IN:=TRUE, PT:=DWORD_TO_TIME(pt_podgotov2*60*1000));
-			IF tmr_podg2.Q THEN
-				tmr_podg2(IN:=FALSE, PT:=DWORD_TO_TIME(pt_podgotov2*60*1000));
-				state:=3;
-				valve_circle_Act^:=FALSE; valve_circle_New^:=TRUE;
-				valve:=TRUE;
-				count_sum := 0;
-				act_doz:=FALSE;
-			END_IF
-		3:	tmr_poliv(IN:=TRUE, PT:=DWORD_TO_TIME(pt_poliv*1000*60));
-			IF r_trig_count.Q THEN count_sum := count_sum + 1; END_IF
-			IF tmr_poliv.Q OR count_sum >= count_sp THEN
-				tmr_poliv(IN:=FALSE, PT:=DWORD_TO_TIME(pt_poliv*1000*60));
-				state:=4;
-				valve:=FALSE;
-				pump :=FALSE;
-			END_IF
-		4:	tmr_sliv(IN:=TRUE, PT:=DWORD_TO_TIME(pt_sliv*1000*60));
-			IF tmr_sliv.Q THEN
-				state:= 0;
-				tmr_sliv(IN:=FALSE, PT:=DWORD_TO_TIME(pt_sliv*1000*60));
-			END_IF
-	END_CASE
-status_poliv := state;
+	tmr_ready_mix(IN:=FALSE, PT:=T#30s);
+	out_valve_poliv_BYTE:=0;
+	out_valve_cyrcle := FALSE;
+	out_pump := FALSE;
+	out_act_doz := FALSE;
+	out_act_analis_doz:=FALSE;
+	out_status_poliv:=0;
+	count_sum := 0;
+	out_skiped:=FALSE;
+	out_avar_timeout_mix:=FALSE;
+	IF r_trig_skip.Q AND out_working THEN
+		out_skiped :=TRUE;
+		cnt_poliv:= cnt_poliv+1; (*Для статистики на панели*)
+	END_IF
+	out_working:=FALSE;
 END_IF
-fPoliv:= state>0;
+
+CASE state OF
+	0:	IF r_trig_start.Q THEN
+			(*Запуск перемешивания, открытие клапана и вкл насоса*)
+			out_valve_cyrcle:=TRUE; out_pump := TRUE;
+			state:=1;
+		END_IF
+	1:	tmr_podg1(IN:=TRUE, PT:=DWORD_TO_TIME(pt_podgotov1*60*1000));	(*Размешивание*)
+		IF tmr_podg1.Q THEN
+			out_act_doz:=TRUE;	(*Включение дозаторов*)
+			out_act_analis_doz:=TRUE;
+			state:=2;
+		END_IF
+	2:	tmr_podg2(IN:=TRUE, PT:=DWORD_TO_TIME(pt_podgotov2*60*1000));	(*Подготовка раствора*)
+		IF tmr_podg2.Q THEN
+			IF in_ready_mix THEN			(*Если раствор готов*)
+				out_act_doz:=FALSE;			(*Отключение дозаторов*)
+				out_valve_cyrcle:=FALSE;	(*Закрытие клапана циркуляции*)
+				out_valve_poliv_BYTE:=Rasp_ARRAY[index_poliv].param.pArrValve;	(*Открытие клапана на полив*)
+				state:=3;
+				tmr_ready_mix(IN:=FALSE, PT:=T#30s);
+			ELSE	(*Ожидание 1 минуты до готовности раствора, иначе сообщение ТАЙМАУТ ПРИГОТОВЛЕНИЯ*)
+				tmr_ready_mix(IN:=TRUE, PT:=T#30s);
+				IF tmr_ready_mix.Q THEN		(*Авария таймаут*)
+					out_avar_timeout_mix:=TRUE;	(*Авария таймаут*)
+					out_act_doz:=FALSE;			(*Отключение дозаторов*)
+					out_valve_cyrcle:=FALSE;	(*Закрытие клапана циркуляции*)
+					out_pump :=FALSE;			(*Отключение насоса*)
+					out_act_analis_doz:=FALSE;
+					out_skiped :=TRUE;
+					cnt_poliv:= cnt_poliv+1; (*Для статистики на панели*)
+					state:=4;
+					tmr_ready_mix(IN:=FALSE, PT:=T#30s);
+				END_IF
+			END_IF
+		END_IF
+		3:	tmr_poliv(IN:=TRUE, PT:=DWORD_TO_TIME(pt_poliv*1000*60));	(*Полив*)
+		IF r_trig_count.Q THEN count_sum := count_sum + 1; END_IF
+		IF count_sum >= count_sp OR  tmr_poliv.Q  THEN	(*Ждем пока пройдет время или насчитается кол-во литров*)
+			out_valve_poliv_BYTE:=0; 	(*Закрытие клапана на полив*)
+			out_pump :=FALSE;			(*Отключение насоса*)
+			out_act_analis_doz:=FALSE;
+			state:=4;
+		END_IF
+	4:	tmr_sliv(IN:=TRUE, PT:=DWORD_TO_TIME(pt_sliv*1000*60));	(*Слив*)
+		IF tmr_sliv.Q THEN
+			state:= 0;
+		END_IF
+END_CASE
+
+out_status_poliv := state;(*Индикация текущего статуса*)
+out_working:= state>0; (*Полив в работе, если статус не 0*)
+Rasp_ARRAY[index_poliv].fWorking:=out_working;
+
+tmr_infoPT(IN:=out_working, PT:=T#5h);
+ind_time_poliv_1_temp:=TIME_TO_DWORD(tmr_infoPT.ET);
+ind_time_poliv_1:=REAL_TO_WORD(ind_time_poliv_1_temp/60000);
+ind_mkub_1:=(count_sum*k_count)*0.001;
+
+
 END_FUNCTION_BLOCK

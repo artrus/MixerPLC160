@@ -9,6 +9,7 @@ STRUCT
 	n_Filtr : INT;			(*Количество данных для усреднения*)
 	min_fiz : REAL;		(*Минимальное физическое значение*)
 	max_fiz : REAL;		(*Максимальное физическое значение*)
+	sdvig : REAL;
 	private : tSmoothParam;
 END_STRUCT
 END_TYPE
@@ -59,9 +60,10 @@ STRUCT
 	cur_time_imp : WORD;	(*Расчитаное время импульса*)
 	cur_time_pause : WORD;	(*Расчитанное время паузы*)
 	valve : BOOL; (*состояние клапана*)
+	ready : BOOL; (*Раствор готов*)
 	param : tDozParam;
-	avar : WORD;	(*.0 - Макс уровень .1 - мин уровень*)
-	warn:WORD;		(*.0 - Макс уровень .1 - мин уровень*)
+	avar : WORD;	(*.0 - мин уровень .1 - макс уровень*)
+	warn:WORD;		(*.0 - мин уровень .1 - макс уровень*)
 END_STRUCT
 END_TYPE
 (* @END_DECLARATION := '0' *)
@@ -81,8 +83,7 @@ STRUCT
 	pt_max_imp : DWORD;		(*макс время импульса*)
 	pt_min_pause : DWORD;	(*мин время паузы*)
 	pt_max_pause : DWORD;	(*макс время паузы*)
-	bManual : BOOL;			(*Открытие клапана в ручном режиме*)
-	pt_manual : DWORD;		(*Время работы в ручном режиме*)
+	invert : BOOL; 			(*Инверсная логика работы регулятора*)
 END_STRUCT
 END_TYPE
 (* @END_DECLARATION := '0' *)
@@ -109,8 +110,8 @@ STRUCT
 	M_sp : WORD;		(*Задание в минутах*)
 	activ : BOOL;		(*Флаг активности*)
 	pt_Time : DWORD; 	(*Длительность полива*)
-	count_sp : DWORD; 		(*объем полива*)
-	pArrValve : POINTER TO BYTE; (*Указатель на массив *)
+	count_sp : REAL; 		(*объем полива*)
+	pArrValve : BYTE; (*Указатель на массив *)
 END_STRUCT
 END_TYPE
 (* @END_DECLARATION := '0' *)

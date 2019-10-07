@@ -9,41 +9,41 @@ VAR
 END_VAR
 (* @END_DECLARATION := '0' *)
 
-DI_ARRAY[0].timeDreb := T#10ms;
+DI_ARRAY[0].timeDreb := T#0ms;
 DI_ARRAY[1].timeDreb := T#1s;
 DI_ARRAY[2].timeDreb := T#500ms;
 DI_ARRAY[3].timeDreb := T#500ms;
 DI_ARRAY[4].timeDreb := T#500ms;
 DI_ARRAY[5].timeDreb := T#500ms;
-DI_ARRAY[6].timeDreb := T#1s;
+DI_ARRAY[6].timeDreb := T#200ms;
 DI_ARRAY[7].timeDreb := T#1s;
-
+(*
 AI_ARRAY[0].min_fiz	:=0;
-AI_ARRAY[0].max_fiz	:=10;
+AI_ARRAY[0].max_fiz	:=10; *)
 AI_ARRAY[0].private.MinACP := 0;
 AI_ARRAY[0].private.MaxACP := 20000;
 AI_ARRAY[0].n_Filtr :=	4;
-AI_ARRAY[0].TimeFiltr := T#250ms;
-
+AI_ARRAY[0].TimeFiltr := T#50ms;
+(*
 AI_ARRAY[1].min_fiz	:=0;
-AI_ARRAY[1].max_fiz	:=10;
+AI_ARRAY[1].max_fiz	:=10; *)
 AI_ARRAY[1].private.MinACP := 0;
 AI_ARRAY[1].private.MaxACP := 20000;
 AI_ARRAY[1].n_Filtr :=	4;
-AI_ARRAY[1].TimeFiltr := T#250ms;
-
+AI_ARRAY[1].TimeFiltr := T#50ms;
+(*
 AI_ARRAY[2].min_fiz	:=0;
-AI_ARRAY[2].max_fiz	:=10;
+AI_ARRAY[2].max_fiz	:=10;*)
 AI_ARRAY[2].private.MinACP := 0;
 AI_ARRAY[2].private.MaxACP := 20000;
-AI_ARRAY[2].n_Filtr :=	4;
-AI_ARRAY[2].TimeFiltr := T#250ms;
-
+AI_ARRAY[2].n_Filtr :=	8;
+AI_ARRAY[2].TimeFiltr := T#500ms;
+(*
 AI_ARRAY[3].min_fiz	:=0;
-AI_ARRAY[3].max_fiz	:=10;
+AI_ARRAY[3].max_fiz	:=10;*)
 AI_ARRAY[3].private.MinACP := 0;
 AI_ARRAY[3].private.MaxACP := 20000;
-AI_ARRAY[3].n_Filtr :=	4;
+AI_ARRAY[3].n_Filtr :=	8;
 AI_ARRAY[3].TimeFiltr := T#250ms;
 
 
@@ -54,4 +54,30 @@ DO_ARRAY[3].fEnable := TRUE;
 DO_ARRAY[4].fEnable := TRUE;
 DO_ARRAY[5].fEnable := TRUE;
 DO_ARRAY[6].fEnable := TRUE;
+
+(*Привязка входов*)
+di_in_count:=ADR(DI_ARRAY[0].outVal);
+di_lev25 := ADR(DI_ARRAY[2].outVal);
+di_lev50 := ADR(DI_ARRAY[3].outVal);
+di_lev75 := ADR(DI_ARRAY[4].outVal);
+di_lev100 := ADR(DI_ARRAY[5].outVal);
+
+(*Привязка выходов*)
+do_pump_Act	:=ADR(DO_ARRAY[0].fActVal);
+do_pump_New	:=ADR(DO_ARRAY[0].fNewVal);
+do_valve_cyrcle_Act  :=ADR(DO_ARRAY[1].fActVal);
+do_valve_cyrcle_New  :=ADR(DO_ARRAY[1].fNewVal);
+do_valve_A_Act :=ADR(DO_ARRAY[2].fActVal);
+do_valve_A_New :=ADR(DO_ARRAY[2].fNewVal);
+do_valve_B_Act :=ADR(DO_ARRAY[3].fActVal);
+do_valve_B_New :=ADR(DO_ARRAY[3].fNewVal);
+do_valve_C_Act :=ADR(DO_ARRAY[4].fActVal);
+do_valve_C_New :=ADR(DO_ARRAY[4].fNewVal);
+do_valve_Water_Act :=ADR(DO_ARRAY[5].fActVal);
+do_valve_Water_New :=ADR(DO_ARRAY[5].fNewVal);
+
+
+(*Настройка логики работы регуляторов*)
+DozVars[0].param.invert:=FALSE;
+DozVars[1].param.invert:=TRUE;
 END_PROGRAM

@@ -1,0 +1,46 @@
+
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '' *)
+(* @OBJECTFLAGS := '0, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+FUNCTION_BLOCK fbRasp
+VAR_INPUT
+	in_auto_manual : BOOL;
+	in_Podpitka_allow : BOOL; 	(*Разрешение на полив от fbPodpitka*)
+	in_HH_podpitka : WORD; 		(*Время в часах для запуска подпитки*)
+	in_MM_podpitka : WORD; 		(*Время в минутах для запуска подпитки*)
+END_VAR
+VAR_OUTPUT
+	out_start_poliv : BOOL;
+	out_index_poliv : WORD;
+	out_start_podpitka : BOOL;
+END_VAR
+VAR
+	i : INT;
+	count_zone : INT := 32;
+	r_trig_beginPoliv : ARRAY [0..31] OF R_TRIG;
+	r_trig_beginPodpitka : R_TRIG;
+END_VAR
+(* @END_DECLARATION := '0' *)
+
+IF in_auto_manual THEN  	(*Если авторежим*)
+	(*Если требуется подпитка по команде или во время подпитки*)
+	r_trig_beginPodpitka(CLK:=H_com = in_HH_podpitka AND M_com = in_MM_podpitka AND S_com >=0 AND S_com <=5);
+	out_start_podpitka:=r_trig_beginPodpitka.Q;
+
+	IF in_Podpitka_allow THEN 	(*И есть разрешение от fbPodpitka на полив *)
+		FOR I:=0 TO count_zone-1 DO
+			r_trig_beginPoliv[I](CLK:=Rasp_ARRAY[i].param.H_sp = H_com AND Rasp_ARRAY[i].param.M_sp = M_com AND  Rasp_ARRAY[i].param.activ );
+			(*out_start_poliv := r_trig_beginPoliv[I].Q; 	Запускаем полив по времени*)
+			IF r_trig_beginPoliv[I].Q THEN
+				out_index_poliv	:=I; (*Индекс текущего полива*)
+				out_start_poliv := TRUE;
+				EXIT; (*Выход при обнаружении полива*)
+			ELSE
+				out_start_poliv := FALSE;
+			END_IF
+		END_FOR
+	END_IF
+END_IF
+END_FUNCTION_BLOCK

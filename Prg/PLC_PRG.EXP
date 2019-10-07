@@ -7,84 +7,94 @@
 PROGRAM PLC_PRG
 VAR
 	I : INT;
-	Pump : fbPump;
-	Podpitka : fbPodpitka;
-	Doz : ARRAY [0..1] OF fbDoz;
-	Poliv : fbPoliv;
-	state : INT  := 1; (*0 - Ожидание действий или расписания, 1 - Приготовление начального раствора, 2 - Подпитка, 3 - Полив*)
-
+	state : INT  := 0; (*0 - Ожидание действий или расписания, 1 - Приготовление начального раствора, 2 - Подпитка, 3 - Полив*)
+	doz_on : BOOL;
 	allow_poliv : BOOL; (*Полив разрешен*)
 
-	pump_on: BOOL;
-	block: BOOL;
 
-(*Удалить ниже*)
-	doz_on : BOOL;
-	reset: BOOL;
-	initial_rastvor : BOOL;
+	tmr_podg_first_mix : TON;
 
+	(*Удалить ниже*)
 
-	start_poliv : BOOL;
-	stop_poliv : BOOL;
-	count_poliv_sp : WORD;
-	pt_poliv_sp : WORD;
-	valve_q : BOOL;
 
 END_VAR
 (* @END_DECLARATION := '0' *)
 IF NOT fINIT THEN INIT; fINIT:=TRUE; END_IF;	(*Инициализация на первом цикле*)
 PLC_Clock(set_time:= TRUE, set_date:= TRUE, HH:=chas, MM:=minut, SS:=sekund, D:=den, M:=mes, Y:=god);	 (*Синхронизируем время с панелью*)
-
 Read_Inputs;
 
 CASE state OF
+	0:	IF cmd_first_mix THEN
+		Raspisanie(	in_auto_manual:=global_auto_manual,
+					in_Podpitka_allow:=Podpitka.allow,
+					in_HH_podpitka := H_podpitka_on,
+					in_MM_podpitka := M_podpitka_on,
+					out_start_poliv=>,
+					out_start_podpitka=>
+					);
+		(*IF first_mix AND NOT global_auto_manual THEN
+			state:=1;
+			doz_on:=TRUE;
+			pump_on:=TRUE;
+			ind_ready_first_mix:=FALSE;
+		END_IF
 
-0: raspisanie;
-
-1: Poliv(	start :=start_poliv,
-			stop :=stop_poliv,
-			pt_podgotov1 := 2,
-			pt_podgotov2 :=t_podg,
-			pt_sliv :=time_sliv,
-			count_sp :=count_poliv_sp,
-			pt_poliv :=pt_poliv_sp,
-			skip:=skip_poliv,
-			valve =>valve_q,
- 			pump =>,
-			act_doz =>,
-			status_poliv=>ind_status_poliv,
-			fPoliv=>ind_POLIV,
-			skiped=>
-		);
-
+	1:	tmr_podg_first_mix(IN:=TRUE, PT:=T#30s);
+		IF tmr_podg_first_mix.Q AND arr_ready_rastvor[0] AND arr_ready_rastvor[1] OR NOT first_mix THEN
+			first_mix:=FALSE;
+			doz_on:=FALSE;
+			pump_on:=FALSE;
+			tmr_podg_first_mix(IN:=FALSE, PT:=T#30s);
+			state := 0;
+			ind_ready_first_mix:=TRUE;
+		END_IF*)
 END_CASE
 
 
+Poliv(		start :=Raspisanie.out_start_poliv,
+			skip:=cmd_skip_poliv OR Pump.avar_bk OR Pump.avar_press
+					OR Podpitka.ftemp_avar  OR Podpitka.avar_bak_null
+					OR DozVars[0].avar.0 OR DozVars[0].avar.1
+					OR DozVars[1].avar.0 OR DozVars[1].avar.1,
+			in_ready_mix:=DozVars[0].ready AND DozVars[1].ready,
+			pt_podgotov1:=time_podgotovka_1, (*Уставка*)
+			pt_podgotov2 :=t_podg, 	(*Уставка*)
+			pt_sliv :=time_sliv,	(*Уставка*)
+			index_poliv:=Raspisanie.out_index_poliv,	(*Индекс требуемого полива*)
+ 			out_pump =>,
+			out_act_doz =>ind_doz_on,
+			out_act_analis_doz =>,
+			out_status_poliv=>ind_status_poliv,
+			out_working=>ind_POLIV,
+			out_skiped=>ind_skiped_poliv,
+			out_avar_timeout_mix=>ind_timeout_mix_no_ready
+		);
 
-Podpitka(	auto_manual:=global_auto_manual,
-			manual := m_nabor,
-			start:= cmd_start_podpitka_bak,
-			H_sp:= H_podpitka_on,
-			M_sp:= M_podpitka_on,
-			reset:= cmd_reset_podpitka_bak,
-			ptTimeNaliv:= DWORD_TO_TIME(time_2_del_uroven*60*1000) ,
-			temp:=AI_ARRAY[2].outVal,
-			temp_sp_avar:=low_avar_temp,
-			temp_sp_warn:=low_warn_temp,
+
+Podpitka(	in_auto_manual:=global_auto_manual,
+			in_analis_avar :=analysis_avar_podpitka,
+			in_start_manual:= cmd_start_podpitka_bak, (*с кнопки*)
+			in_start_auto:=Raspisanie.out_start_podpitka, (*авто запуск*)
+			in_reset:= cmd_reset_podpitka_bak,
+			in_ptTimeNaliv:= DWORD_TO_TIME(time_2_del_uroven*60*1000) ,
+			in_time_maxOpenValve:=DWORD_TO_TIME(timeout_work_valve_water*1000),
+			in_cur_temp:=AI_ARRAY[2].outVal,
+			in_temp_sp_avar:=low_avar_temp,
+			in_temp_sp_warn:=low_warn_temp,
 			status=>ind_status_podpitki,
-			valve=>ind_Water,
+			out_valve_Water=>,
 			allow=>allow_poliv, allow=>ind_allow_poliv,
 			avar_no_water=>ind_no_Water,
 			ftemp_warn=> warn_temper,
-			ftemp_avar=> ind_avr_temp
+			ftemp_avar=> ind_avr_temp,
+			avar_bak_null=>ind_bak_null
 			);
 
-Pump(		on := Poliv.pump,
-			block := block,
+Pump(		on := Poliv.out_pump,
 			reset := reset_avar_nas,
 			ptStartPump := timeout_start_pump,
 			analysis_avar := analysis_avar_pump,
-			status => ind_NAS,
+			status => ,
 			avar_bk => ind_avar_bk_ns,
 			avar_press => ind_avar_press_ns ,
 			avar_log =>,
@@ -94,18 +104,14 @@ Pump(		on := Poliv.pump,
 DozVars[0].cur_conc := AI_ARRAY[0].outVal;
 DozVars[1].cur_conc := AI_ARRAY[1].outVal;
 FOR I:=0 TO 1 DO
-		Doz[I]( in:=ADR(DozVars[I]),
-				enable :=Poliv.act_doz,
-				reset :=reset,
-				auto_manual:=global_auto_manual,
-				initial := initial_rastvor,
-				blocked =>arr_valve_blocked[I],
-				valve =>arr_valve[I],
-				ready =>arr_ready_rastvor[I]
-		);
+	Doz[I]( in:=ADR(DozVars[I]),
+			in_enable_doz :=Poliv.out_act_doz OR doz_on,
+			in_enable_analis:= Poliv.out_act_analis_doz,
+			auto_manual:=global_auto_manual,
+			);
+
 END_FOR
-Control_ValveABC();
-ind_avar_global := ind_no_Water OR warn_temper OR ind_avr_temp OR arr_valve_blocked[0] OR arr_valve_blocked[1] OR ind_avar_bk_ns OR ind_avar_press_ns OR warn_press;
+Control_AutoManual();
 
 
 Modbus();

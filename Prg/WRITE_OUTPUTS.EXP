@@ -54,6 +54,7 @@ sirena:=DO_ARRAY[6].fWriteVal;
  :=DO_ARRAY[14].fWriteVal;
  :=DO_ARRAY[15].fWriteVal;
 *)
+(*
 out_gr1.0 :=DO_ARRAY[16].fWriteVal;
 out_gr1.1 :=DO_ARRAY[17].fWriteVal;
 out_gr1.2 :=DO_ARRAY[18].fWriteVal;
@@ -62,4 +63,5 @@ out_gr1.4 :=DO_ARRAY[20].fWriteVal;
 out_gr1.5 :=DO_ARRAY[21].fWriteVal;
 out_gr1.6 :=DO_ARRAY[22].fWriteVal;
 out_gr1.7 :=DO_ARRAY[23].fWriteVal;
+*)
 END_PROGRAM

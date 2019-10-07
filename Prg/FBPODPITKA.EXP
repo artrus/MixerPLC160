@@ -6,144 +6,139 @@
 (* @SYMFILEFLAGS := '2048' *)
 FUNCTION_BLOCK fbPodpitka
 VAR_INPUT
-	auto_manual : BOOL;
-	manual : BOOL;
-	start : BOOL;	(*Запуск подпитки*)
-	H_sp : UINT;  (*Время в часах для запуска подпитки*)
-	M_sp : UINT;	(*Время в минутах для запуска подпитки*)
-	reset : BOOL;
-	ptTimeNaliv : TIME; (*Время, требуемое на налив от отметки к отметке*)
-	temp : REAL;		(*Температура раствора*)
-	temp_sp_avar : REAL;		(*Аваийная температура раствора*)
-	temp_sp_warn : REAL;		(*Аваийная температура раствора*)
+	in_auto_manual : BOOL;		(*Режим Ручнай - Авто*)
+	in_analis_avar : BOOL;		(*Требуется анализ аварий*)
+	in_start_manual : BOOL;			(*Запуск подпитки с кнопки*)
+	in_start_auto : BOOL;			(*Запуск подпитки авто*)
+	in_reset : BOOL;
+	in_ptTimeNaliv : TIME; 		(*Время, требуемое на налив от отметки к отметке*)
+	in_time_maxOpenValve :TIME; (*Время, на которое максимально откроется клапан*)
+	in_cur_temp : REAL;			(*Температура раствора*)
+	in_temp_sp_warn : REAL;		(*Минимальная температура раствора*)
+	in_temp_sp_avar : REAL;		(*Аваийная температура раствора*)
 END_VAR
 VAR_OUTPUT
-	status : INT;	(*1-нет воды, 2-налив воды, 3-бак пуст*)
-	valve : BOOL;
-	allow :	BOOL;	(*Разрешение полива*)
-	avar_no_water : BOOL;    (*Авария нет воды*)
-	ftemp_avar : BOOL;    (*Авария минимальная температура*)
-	ftemp_warn : BOOL;    (*предупреждение температура *)
+	out_valve_Water : BOOL;		(*Клапан набора воды*)
+	status : INT;				(*1-нет подачи воды, 2-налив воды, 3-бак пуст, 4-проверка, 5-Полив запрещен, 6-Полив разрешен*)
+	allow :	BOOL;				(*Разрешение полива*)
+	avar_no_water : BOOL;    	(*Авария нет подачи воды*)
+	ftemp_avar : BOOL;    		(*Авария минимальная температура*)
+	ftemp_warn : BOOL;   	 	(*предупреждение температура *)
+	avar_bak_null : BOOL; 		(*Бак пуст*)
 END_VAR
 VAR
-	di_lev25 : POINTER TO BOOL;
-	di_lev50 : POINTER TO BOOL;
-	di_lev75 : POINTER TO BOOL;
-	di_lev100 : POINTER TO BOOL;
-	do_valve_water_actVal : POINTER TO BOOL;
-	do_valve_water_newVal : POINTER TO BOOL;
+	di_arr : ARRAY [0..3] OF BOOL;
 	tmrNaliv : ARRAY [0..3] OF TON;
-	tmrWaterNull, tmrAutoReset, tmrTempWarn, tmrTempAvar : TON;
+	tmrWaterNull, tmrTempWarn, tmrTempAvar, tmrMaxValveOpen : TON;
 	rtrigAutoManual : R_TRIG;
 	ftrigAutoManual : F_TRIG;
-	di_arr : ARRAY [0..3] OF BOOL;
+	rtrigReset : R_TRIG;
 	state : INT := 2;  (*0 - начальный запуск 1 - идет подпитка 2-остановлено и ожидание*)
 	I: INT;
+	time_maxOpenValve : TIME;
 
 END_VAR
 (* @END_DECLARATION := '0' *)
-
-di_lev25 := ADR(DI_ARRAY[2].outVal);	di_arr[0]:=di_lev25^;
-di_lev50 := ADR(DI_ARRAY[3].outVal);	di_arr[1]:=di_lev50^;
-di_lev75 := ADR(DI_ARRAY[4].outVal);	di_arr[2]:=di_lev75^;
-di_lev100 := ADR(DI_ARRAY[5].outVal);	di_arr[3]:=di_lev100^;
-do_valve_water_actVal:=ADR(DO_ARRAY[5].fActVal);
-do_valve_water_newVal:=ADR(DO_ARRAY[5].fNewVal);
-rtrigAutoManual(CLK:=auto_manual);
-ftrigAutoManual(CLK:=auto_manual);
-IF auto_manual THEN
+di_arr[0]:=di_lev25^; di_arr[1]:=di_lev50^; di_arr[2]:=di_lev75^; di_arr[3]:=di_lev100^;
+rtrigAutoManual(CLK:=in_auto_manual);
+ftrigAutoManual(CLK:=in_auto_manual);
+rtrigReset(CLK:=in_reset);
+IF rtrigReset.Q THEN		(*Сбрасываем подпитку по команде*)
+	state := 2;
+	out_valve_Water:=FALSE;
+	allow:=FALSE;
+	avar_no_water:=FALSE;
+	status := 0;
+	tmrNaliv[0](IN:=FALSE, PT:=in_ptTimeNaliv); tmrNaliv[1](IN:=FALSE, PT:=in_ptTimeNaliv); tmrNaliv[2](IN:=FALSE, PT:=in_ptTimeNaliv); tmrNaliv[3](IN:=FALSE, PT:=in_ptTimeNaliv);
+	IF di_lev25^ AND di_lev50^ AND di_lev75^ THEN	(*Если уровень воды выше  75% то переходим режим ожидания и разрешаем поливы*)
+		allow:=TRUE;
+	END_IF
+END_IF
+IF in_auto_manual THEN
 	IF rtrigAutoManual.Q THEN
-		do_valve_water_actVal^:=FALSE; 	do_valve_water_newVal^:=TRUE; (*Сброс при возвращении в авторежим*)
+		out_valve_Water:=FALSE; 	(*Сброс при возвращении в авторежим*)
 	END_IF
 	CASE state OF
 		0:	IF di_lev25^ AND di_lev50^ AND di_lev75^ THEN	(*Если уровень воды выше  75% то переходим режим ожидания*)
 				allow:=TRUE;
+				avar_no_water:=FALSE;
 				state := 2;
 				status := 0;
-			ELSIF NOT di_lev75^ AND NOT di_lev100^ THEN		(*Если уровень воды ниже  75% то включаем подпитку*)
+			ELSE		(*Если уровень воды ниже  75% то включаем подпитку*)
 				allow:=FALSE;
+				out_valve_Water:=TRUE;
+				avar_no_water:=FALSE;
 				state := 1;
 				status := 2;
-				do_valve_water_actVal^:=TRUE; 	do_valve_water_newVal^:=TRUE;
+				tmrMaxValveOpen(IN:=FALSE,PT:=time_maxOpenValve);
+				tmrNaliv[0](IN:=FALSE, PT:=in_ptTimeNaliv); tmrNaliv[1](IN:=FALSE, PT:=in_ptTimeNaliv); tmrNaliv[2](IN:=FALSE, PT:=in_ptTimeNaliv); tmrNaliv[3](IN:=FALSE, PT:=in_ptTimeNaliv);
 			END_IF
-	
-		1:	IF di_lev100^ THEN		(*Если дождались заполнения бака то отключаем подпитку и переходим режим ожидания*)
+
+		1:	tmrMaxValveOpen(IN:=TRUE,PT:=time_maxOpenValve);
+			IF di_lev100^ OR tmrMaxValveOpen.Q THEN		(*Если дождались заполнения бака то отключаем подпитку и переходим режим ожидания*)
+				out_valve_Water:=FALSE;
+				allow:=TRUE;
 				state := 2;
 				status := 0;
-				do_valve_water_actVal^:=FALSE; 	do_valve_water_newVal^:=TRUE;
-				allow:=TRUE;
 			ELSE					(*иначе следим за наливом*)
-				FOR I:=0 TO 3 DO (*Проверка на выполнение налива от отметки к отметки за установленное время*)
-				IF I = 0 THEN
-					tmrNaliv[I](IN:=NOT di_arr[I] AND NOT di_arr[I+1] AND NOT di_arr[I+2] AND NOT di_arr[I+3], PT:=ptTimeNaliv);
-				ELSIF I = 1 OR I = 2 THEN
-					tmrNaliv[I](IN:=di_arr[I-1] AND NOT di_arr[I] AND NOT di_arr[I+1] , PT:=ptTimeNaliv);
-				ELSIF I = 3  THEN
-					tmrNaliv[I](IN:=di_arr[I-2] AND  di_arr[I-1] AND NOT di_arr[I], PT:=ptTimeNaliv);
-				END_IF
-				END_FOR
-				IF tmrNaliv[0].Q OR tmrNaliv[1].Q OR tmrNaliv[2].Q THEN (*Если таймеры отметок 25,50 сработали то запрет на полив*)
-					allow:=FALSE;
-					avar_no_water:=TRUE;
-					status:=1;
-					state:=2;
-					do_valve_water_actVal^:=FALSE; 	do_valve_water_newVal^:=TRUE;
-					tmrNaliv[0](IN:=FALSE, PT:=ptTimeNaliv); tmrNaliv[1](IN:=FALSE, PT:=ptTimeNaliv); tmrNaliv[2](IN:=FALSE, PT:=ptTimeNaliv);
-				ELSIF tmrNaliv[3].Q THEN	(*Если таймеры отметки 75 сработал то нет запрета на полив*)
-					allow:=TRUE;
-					status:=1;
-					avar_no_water:=TRUE;
-					state:=2;
-					do_valve_water_actVal^:=FALSE; 	do_valve_water_newVal^:=TRUE;
-					tmrNaliv[3](IN:=FALSE, PT:=ptTimeNaliv);
+				IF in_analis_avar THEN
+					FOR I:=0 TO 3 DO (*Проверка на выполнение налива от отметки к отметки за установленное время*)
+					IF I = 0 THEN
+						tmrNaliv[I](IN:=NOT di_arr[I] AND NOT di_arr[I+1] AND NOT di_arr[I+2] AND NOT di_arr[I+3], PT:=in_ptTimeNaliv);
+					ELSIF I = 1 OR I = 2 THEN
+						tmrNaliv[I](IN:=di_arr[I-1] AND NOT di_arr[I] AND NOT di_arr[I+1] , PT:=in_ptTimeNaliv);
+					ELSIF I = 3  THEN
+						tmrNaliv[I](IN:=di_arr[I-2] AND  di_arr[I-1] AND NOT di_arr[I], PT:=in_ptTimeNaliv);
+					END_IF
+					END_FOR
+					IF tmrNaliv[0].Q OR tmrNaliv[1].Q OR tmrNaliv[2].Q THEN (*Если таймеры отметок 25,50 сработали то запрет на полив, авария нет подачи воды*)
+						out_valve_Water:=FALSE;
+						allow:=FALSE;
+						avar_no_water:=TRUE;
+						status:=1;
+						state:=2;
+						tmrNaliv[0](IN:=FALSE, PT:=in_ptTimeNaliv); tmrNaliv[1](IN:=FALSE, PT:=in_ptTimeNaliv); tmrNaliv[2](IN:=FALSE, PT:=in_ptTimeNaliv);
+					ELSIF tmrNaliv[3].Q THEN	(*Если таймеры отметки 75 сработал то нет запрета на полив*)
+						out_valve_Water:=FALSE;
+						allow:=TRUE;
+						avar_no_water:=TRUE;
+						status:=0;
+						state:=2;
+						tmrNaliv[3](IN:=FALSE, PT:=in_ptTimeNaliv);
+					END_IF
 				END_IF
 			END_IF
 
 	 	2:	tmrWaterNull(IN:=NOT di_lev25^ AND NOT di_lev50^ AND NOT di_lev75^ AND NOT di_lev100^, PT:=T#5s ); (*Если уровень в баке ниже 25% то статус - бак пуст*)
+			avar_bak_null := tmrWaterNull.Q;
 			IF tmrWaterNull.Q THEN
 				status := 3;
 				allow:=FALSE;
+			ELSIF di_lev25^ AND di_lev50^ AND di_lev75^ THEN	(*Если уровень воды выше  75% то переходим режим ожидания*)
+					allow:=TRUE;
+					status := 0;
 			END_IF
-			tmrAutoReset (IN:=avar_no_water, PT:=T#5s); (*Автосброс аварии*)
-			IF tmrAutoReset.Q THEN
-				tmrAutoReset (IN:=FALSE, PT:=T#2s500ms);
-				avar_no_water:=FALSE;
-			END_IF
-			IF ((H_com = H_sp AND M_com = M_sp AND S_com >=0 AND S_com <=5) OR start ) THEN  (*Если требуется подпитка по команде или во время подпитки*)
+			IF in_start_manual THEN  (*Если требуется подпитка по команде или во время подпитки*)
 				state := 0;
-				do_valve_water_actVal^:=FALSE; 	do_valve_water_newVal^:=TRUE;
+				out_valve_Water:=FALSE;
+				time_maxOpenValve:=T#24h;
+			END_IF
+			IF in_start_auto THEN  (*Если требуется подпитка по команде или во время подпитки*)
+				state := 0;
+				out_valve_Water:=FALSE;
+				time_maxOpenValve:=in_time_maxOpenValve;
 			END_IF
 	END_CASE
 
-	IF reset THEN		(*Сбрасываем подпитку по команде*)
-		state := 2;
-		do_valve_water_actVal^:=FALSE; 	do_valve_water_newVal^:=TRUE;
-		allow:=FALSE;
-		avar_no_water:=FALSE;
-		status := 0;
-		tmrNaliv[0](IN:=FALSE, PT:=ptTimeNaliv); tmrNaliv[1](IN:=FALSE, PT:=ptTimeNaliv); tmrNaliv[2](IN:=FALSE, PT:=ptTimeNaliv); tmrNaliv[3](IN:=FALSE, PT:=ptTimeNaliv);
-		IF di_lev25^ AND di_lev50^ AND di_lev75^ THEN	(*Если уровень воды выше  75% то переходим режим ожидания и разрешаем поливы*)
-			allow:=TRUE;
-		END_IF
-	END_IF
-
-	(*Аварийные сообщения по температуре*)
-	tmrTempWarn(IN:=temp <= temp_sp_warn , PT:=T#10s);
-	tmrTempAvar(IN:=temp <= temp_sp_avar , PT:=T#1m);
-	ftemp_warn:=tmrTempWarn.Q;
-	ftemp_avar:=tmrTempAvar.Q;
-	IF ftemp_avar THEN allow:=FALSE; END_IF
 ELSE	(*Если в ручном режиме то сброс таймеров и переменных в исходное*)
 	IF ftrigAutoManual.Q THEN
 		state := 2;
-		do_valve_water_actVal^:=FALSE; 	do_valve_water_newVal^:=TRUE;
+		out_valve_Water:=FALSE;
 		allow:=FALSE;
 		avar_no_water:=FALSE;
 		status := 0;
-		tmrNaliv[0](IN:=FALSE, PT:=ptTimeNaliv); tmrNaliv[1](IN:=FALSE, PT:=ptTimeNaliv); tmrNaliv[2](IN:=FALSE, PT:=ptTimeNaliv); tmrNaliv[3](IN:=FALSE, PT:=ptTimeNaliv);
+		tmrNaliv[0](IN:=FALSE, PT:=in_ptTimeNaliv); tmrNaliv[1](IN:=FALSE, PT:=in_ptTimeNaliv); tmrNaliv[2](IN:=FALSE, PT:=in_ptTimeNaliv); tmrNaliv[3](IN:=FALSE, PT:=in_ptTimeNaliv);
 	END_IF
-	do_valve_water_actVal^:=manual; 	do_valve_water_newVal^:=TRUE; (*Присвоение значения клапану с панели ууправления*)
-
 END_IF
 (*для линейки уровня бака на диспелее*)
 IF di_lev100^ THEN ind_UROVEN:=95;
@@ -151,6 +146,20 @@ ELSIF di_lev75^ THEN ind_UROVEN:=75;
 ELSIF di_lev50^ THEN ind_UROVEN:=50;
 ELSIF di_lev25^ THEN ind_UROVEN:=25;
 ELSE ind_UROVEN:=5; END_IF
-valve:=do_valve_water_actVal^;
+(*Аварийные сообщения по температуре*)
+IF in_analis_avar THEN
+	tmrTempWarn(IN:=in_cur_temp <= in_temp_sp_warn , PT:=T#10s);
+	tmrTempAvar(IN:=in_cur_temp <= in_temp_sp_avar , PT:=T#1m);
+	ftemp_warn:=tmrTempWarn.Q;
+	ftemp_avar:=tmrTempAvar.Q;
+	IF ftemp_avar THEN allow:=FALSE;status := 5; END_IF
+ELSE
+	ftemp_warn:=FALSE;
+	ftemp_avar:=FALSE;
+	avar_no_water:=FALSE;
+	avar_bak_null:=FALSE;
+	allow:=TRUE;
+	status:=0;
+END_IF
 
 END_FUNCTION_BLOCK

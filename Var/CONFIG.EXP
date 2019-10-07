@@ -961,7 +961,7 @@ _IECOUT: %QB9.13
 _IECDIAG: %MB9.13
 _DOWNLOAD: 1
 _EXCLUDEFROMAUTOADR: 0
-_COMMENT: 'рег11-2 аварии и пр'
+_COMMENT: ''
 
 _CHANNEL
 _SECTION_NAME: 'ByteOutput'
@@ -977,7 +977,7 @@ _BIT 3: %QX9.13.0.3 'ind_Water' ' Индикация клапана набора воды'
 _BIT 4: %QX9.13.0.4 'ind_cykl' ' Индикация клапана рециркуляции'
 _BIT 5: %QX9.13.0.5 'ind_NAS' ' Индикация работы насоса'
 _BIT 6: %QX9.13.0.6 'ind_NO_MU110' ' Отсутсвие связи с МУ110'
-_BIT 7: %QX9.13.0.7 '' ' '
+_BIT 7: %QX9.13.0.7 'ind_in_count' ' '
 _END_CHANNEL
 _END_MODULE
 
@@ -1001,9 +1001,9 @@ _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QB9.14.0
 _BIT 0: %QX9.14.0.0 'ind_POLIV' 'Идет полив'
-_BIT 1: %QX9.14.0.1 'ind_STOP_BT' 'Индикация в панель стоп с внешней кнопки'
-_BIT 2: %QX9.14.0.2 'ind_ready_mix' 'Готовность раствора'
-_BIT 3: %QX9.14.0.3 'ind_podg_ON' 'Идикация Идет подготовка'
+_BIT 1: %QX9.14.0.1 'ind_timeout_mix_no_ready' ' '
+_BIT 2: %QX9.14.0.2 'ind_ready_first_mix' 'Готовность раствора'
+_BIT 3: %QX9.14.0.3 'ind_bak_null' 'Идикация Идет подготовка'
 _BIT 4: %QX9.14.0.4 'ind_avr_power' 'Авария нет питания'
 _BIT 5: %QX9.14.0.5 'ind_avr_EC_min' 'Индикация аварии ЕС минимальное'
 _BIT 6: %QX9.14.0.6 'ind_avr_EC_max' ' Индикация аварии ЕС максимальное'
@@ -1034,9 +1034,9 @@ _BIT 0: %QX9.15.0.0 'ind_avr_PH_max' 'Индикация аварии PH максимальное'
 _BIT 1: %QX9.15.0.1 'ind_avr_nas' 'Индикация аварии насоса'
 _BIT 2: %QX9.15.0.2 'ind_avar_press_ns' 'Авария по давлению после насоса'
 _BIT 3: %QX9.15.0.3 'ind_avar_bk_ns' 'Авария по пускателю насоса'
-_BIT 4: %QX9.15.0.4 '' ' Bit 4'
+_BIT 4: %QX9.15.0.4 'ind_no_Water' ' Bit 4'
 _BIT 5: %QX9.15.0.5 'ind_avr_temp' 'Температура раствора низкая'
-_BIT 6: %QX9.15.0.6 '' ' Bit 6'
+_BIT 6: %QX9.15.0.6 'ind_allow_poliv' ' Bit 6'
 _BIT 7: %QX9.15.0.7 'ind_sound_alarm' 'Индикация звуковой сирены'
 _END_CHANNEL
 _END_MODULE
@@ -1066,8 +1066,8 @@ _BIT 2: %QX9.16.0.2 'ind_warn_PH_min' 'Индикация предупреждение PH минимальное'
 _BIT 3: %QX9.16.0.3 'ind_warn_PH_max' 'Индикация предупреждение PH максимальное'
 _BIT 4: %QX9.16.0.4 'warn_press' 'Предупрежждение низкое давление'
 _BIT 5: %QX9.16.0.5 'warn_temper' 'Предупреждение температура раствора низкая'
-_BIT 6: %QX9.16.0.6 '' 'Bit 6'
-_BIT 7: %QX9.16.0.7 '' 'Bit 7'
+_BIT 6: %QX9.16.0.6 'ind_avar_global' 'Bit 6'
+_BIT 7: %QX9.16.0.7 'ind_skiped_poliv' 'Bit 7'
 _END_CHANNEL
 _END_MODULE
 
@@ -1090,14 +1090,14 @@ _SYMBOLIC_NAME: ''
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QB9.17.0
-_BIT 0: %QX9.17.0.0 '' 'Bit 0'
-_BIT 1: %QX9.17.0.1 '' 'Bit 1'
-_BIT 2: %QX9.17.0.2 '' 'Bit 2'
-_BIT 3: %QX9.17.0.3 '' 'Bit 3'
-_BIT 4: %QX9.17.0.4 '' 'Bit 4'
+_BIT 0: %QX9.17.0.0 'ind_ready_EC' 'Bit 0'
+_BIT 1: %QX9.17.0.1 'ind_ready_pH' 'Bit 1'
+_BIT 2: %QX9.17.0.2 'ind_ready_mix' 'Bit 2'
+_BIT 3: %QX9.17.0.3 'ind_doz_on' 'Bit 3'
+_BIT 4: %QX9.17.0.4 'ind_first_mix_working' 'Bit 4'
 _BIT 5: %QX9.17.0.5 '' 'Bit 5'
 _BIT 6: %QX9.17.0.6 '' 'Bit 6'
-_BIT 7: %QX9.17.0.7 '' 'Bit 7'
+_BIT 7: %QX9.17.0.7 'ind_NOT_POLIV' 'Bit 7'
 _END_CHANNEL
 _END_MODULE
 
@@ -1120,14 +1120,14 @@ _SYMBOLIC_NAME: ''
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QB9.18.0
-_BIT 0: %QX9.18.0.0 'first_mix' 'Команда приготовить первоначальный раствор'
-_BIT 1: %QX9.18.0.1 'ost_first' 'Остановить приготовление'
-_BIT 2: %QX9.18.0.2 'skip_poliv' 'Пропус полива'
-_BIT 3: %QX9.18.0.3 'off_sound' 'Выкл сирену'
+_BIT 0: %QX9.18.0.0 'cmd_first_mix' 'Команда приготовить первоначальный раствор'
+_BIT 1: %QX9.18.0.1 'cmd_ost_first' 'Остановить приготовление'
+_BIT 2: %QX9.18.0.2 'cmd_skip_poliv' 'Пропус полива'
+_BIT 3: %QX9.18.0.3 'cmd_off_sound' 'Выкл сирену'
 _BIT 4: %QX9.18.0.4 '' ' '
 _BIT 5: %QX9.18.0.5 'reset_avar_nas' 'Сброс аварии насоса'
 _BIT 6: %QX9.18.0.6 'global_auto_manual' 'Глобальный режим работы Авто/Ручное'
-_BIT 7: %QX9.18.0.7 '' 'Bit 7'
+_BIT 7: %QX9.18.0.7 'analysis_avar_pump' 'Bit 7'
 _END_CHANNEL
 _END_MODULE
 
@@ -1150,13 +1150,13 @@ _SYMBOLIC_NAME: ''
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QB9.19.0
-_BIT 0: %QX9.19.0.0 '' 'Bit 0'
-_BIT 1: %QX9.19.0.1 '' 'Bit 1'
+_BIT 0: %QX9.19.0.0 'cmd_start_podpitka_bak' 'Bit 0'
+_BIT 1: %QX9.19.0.1 'cmd_reset_podpitka_bak' 'Bit 1'
 _BIT 2: %QX9.19.0.2 '' 'Bit 2'
-_BIT 3: %QX9.19.0.3 '' 'Bit 3'
+_BIT 3: %QX9.19.0.3 'cmd_reset_count_skip' 'Bit 3'
 _BIT 4: %QX9.19.0.4 '' 'Bit 4'
 _BIT 5: %QX9.19.0.5 '' 'Bit 5'
-_BIT 6: %QX9.19.0.6 '' 'Bit 6'
+_BIT 6: %QX9.19.0.6 'analysis_avar_podpitka' 'Bit 6'
 _BIT 7: %QX9.19.0.7 '' 'Bit 7'
 _END_CHANNEL
 _END_MODULE
@@ -1277,7 +1277,7 @@ _BIT 3: %QX9.23.0.3 'm_kl6' 'Bit 3'
 _BIT 4: %QX9.23.0.4 'm_kl7' 'Bit 4'
 _BIT 5: %QX9.23.0.5 'm_kl8' 'Bit 5'
 _BIT 6: %QX9.23.0.6 '' 'Bit 6'
-_BIT 7: %QX9.23.0.7 '' 'Bit 7'
+_BIT 7: %QX9.23.0.7 'ind_manual_visible' 'Bit 7'
 _END_CHANNEL
 _END_MODULE
 
@@ -4112,7 +4112,7 @@ _COMMENT: ''
 _CHANNEL
 _SECTION_NAME: 'FloatOutput'
 _INDEX_IN_PARENT: '1'
-_SYMBOLIC_NAME: ''
+_SYMBOLIC_NAME: 'Begin_adr_task'
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QD9.152.0
@@ -4816,7 +4816,7 @@ _COMMENT: ''
 _CHANNEL
 _SECTION_NAME: 'ByteOutput'
 _INDEX_IN_PARENT: '1'
-_SYMBOLIC_NAME: ''
+_SYMBOLIC_NAME: 'Begin_adr_valves'
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QB9.184.0
@@ -5776,7 +5776,7 @@ _COMMENT: ''
 _CHANNEL
 _SECTION_NAME: 'ByteOutput'
 _INDEX_IN_PARENT: '1'
-_SYMBOLIC_NAME: ''
+_SYMBOLIC_NAME: 'Begin_adr_act'
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QB9.216.0
@@ -6468,7 +6468,7 @@ _COMMENT: ''
 _CHANNEL
 _SECTION_NAME: 'WordOutput'
 _INDEX_IN_PARENT: '1'
-_SYMBOLIC_NAME: ''
+_SYMBOLIC_NAME: 'time_podgotovka_1'
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QW9.246.0
@@ -6490,7 +6490,7 @@ _COMMENT: ''
 _CHANNEL
 _SECTION_NAME: 'WordOutput'
 _INDEX_IN_PARENT: '1'
-_SYMBOLIC_NAME: ''
+_SYMBOLIC_NAME: 'timeout_work_valve_water'
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QW9.247.0
@@ -6512,7 +6512,7 @@ _COMMENT: ''
 _CHANNEL
 _SECTION_NAME: 'WordOutput'
 _INDEX_IN_PARENT: '1'
-_SYMBOLIC_NAME: ''
+_SYMBOLIC_NAME: 'timeout_start_pump'
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QW9.248.0
@@ -6798,7 +6798,7 @@ _COMMENT: ''
 _CHANNEL
 _SECTION_NAME: 'WordOutput'
 _INDEX_IN_PARENT: '1'
-_SYMBOLIC_NAME: 'ind_time_poliv_2'
+_SYMBOLIC_NAME: ''
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QW9.261.0
@@ -6864,7 +6864,7 @@ _COMMENT: ''
 _CHANNEL
 _SECTION_NAME: 'WordOutput'
 _INDEX_IN_PARENT: '1'
-_SYMBOLIC_NAME: ''
+_SYMBOLIC_NAME: 'ind_status_podpitki'
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QW9.264.0
@@ -6886,7 +6886,7 @@ _COMMENT: ''
 _CHANNEL
 _SECTION_NAME: 'WordOutput'
 _INDEX_IN_PARENT: '1'
-_SYMBOLIC_NAME: ''
+_SYMBOLIC_NAME: 'ind_status_poliv'
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QW9.265.0
@@ -8030,7 +8030,7 @@ _COMMENT: ''
 _CHANNEL
 _SECTION_NAME: 'FloatOutput'
 _INDEX_IN_PARENT: '1'
-_SYMBOLIC_NAME: 'ind_mkub_2'
+_SYMBOLIC_NAME: ''
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QD9.317.0
@@ -8052,7 +8052,7 @@ _COMMENT: ''
 _CHANNEL
 _SECTION_NAME: 'FloatOutput'
 _INDEX_IN_PARENT: '1'
-_SYMBOLIC_NAME: ''
+_SYMBOLIC_NAME: 'ind_temp_water'
 _COMMENT: ''
 _CHANNEL_MODE: 'Q'
 _IECADR: %QD9.318.0

@@ -7,12 +7,12 @@
 VAR_GLOBAL
 	fINIT : BOOL:= FALSE;	(*Флаг инициализации ПЛК*)
 	fIMIT_DI : BOOL:=FALSE;	(*Флаг глобальной имитации дискретных входов*)
-	fIMIT_AI : BOOL:=TRUE;	(*Флаг глобальной имитации аналоговых входов*)
+	fIMIT_AI : BOOL:=FALSE;	(*Флаг глобальной имитации аналоговых входов*)
 	H_com: UINT;		(*час реального времени*)
 	M_com: UINT;		(*минуты реального времени*)
 	S_com: UINT;		(*секунды реального времени*)
 	(*Версия ПО*)
-	VERSION_M:WORD	:= 2;
+	VERSION_M:WORD	:= 3;
 	VERSION_L:WORD 	:= 0;
 
 	INITIAL:BOOL:=TRUE;
@@ -20,17 +20,29 @@ VAR_GLOBAL
 	DI_BUF: WORD;
 	AI_BUF : ARRAY [0..3] OF REAL;
 	CountDI : INT :=8;
-	CountDO:INT := 32;
+	CountDO:INT := 8;
 	CountAI : INT :=4;
 	DI_ARRAY : ARRAY [0..7] OF tDI; (*Массив DI*)
 	DO_ARRAY : ARRAY[0..31] OF tDO; (*массив DO*)
 	AI_ARRAY : ARRAY[0..3] OF tAI; (*массив AI*)
 	DozVars : ARRAY[0..1] OF tDoz;	(*массив переменных дозаторов 0 - ес, 1 - ph*)
 	Rasp_ARRAY : ARRAY [0..31] OF tRasp;
-	arr_valve_blocked : ARRAY [0..1] OF BOOL;
-	arr_valve : ARRAY [0..1] OF BOOL;
-	arr_ready_rastvor : ARRAY [0..1] OF BOOL;
 
+	Raspisanie : fbRasp;
+	Pump : fbPump;
+	Podpitka : fbPodpitka;
+	Doz : ARRAY [0..1] OF fbDoz;
+	Poliv : fbPoliv;
+
+	di_in_count : POINTER TO BOOL;	 (*Счетчик полива*)
+	di_lev25 : POINTER TO BOOL;
+	di_lev50 : POINTER TO BOOL;
+	di_lev75 : POINTER TO BOOL;
+	di_lev100 : POINTER TO BOOL;
+
+	do_valve_A_Act, do_valve_A_New, do_valve_B_Act, do_valve_B_New, do_valve_C_Act, do_valve_C_New, do_valve_cyrcle_Act, do_valve_cyrcle_New : POINTER TO BOOL;
+	do_pump_Act, do_pump_New : POINTER TO BOOL;
+	do_valve_Water_Act, do_valve_Water_New :POINTER TO BOOL;
 END_VAR
 
 (* @OBJECT_END := 'Global_Variables' *)

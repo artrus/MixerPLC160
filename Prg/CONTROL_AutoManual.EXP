@@ -1,0 +1,90 @@
+
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '' *)
+(* @OBJECTFLAGS := '0, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+PROGRAM Control_AutoManual
+VAR
+
+	tmr_valveA, tmr_vavleB, tmr_valveC : TP;
+	rtrig_global_auto_manual : R_TRIG;
+	ftrig_global_auto_manual : R_TRIG;
+END_VAR
+(* @END_DECLARATION := '0' *)
+
+rtrig_global_auto_manual(CLK:=global_auto_manual);
+ftrig_global_auto_manual(CLK:=global_auto_manual);
+(*Переход в авто режим*)
+IF 		rtrig_global_auto_manual.Q THEN
+		tmr_valveA(IN:=FALSE, PT:=DWORD_TO_TIME(t_man_A));
+		tmr_vavleB(IN:=FALSE, PT:=DWORD_TO_TIME(t_man_B));
+		tmr_valveC(IN:=FALSE, PT:=DWORD_TO_TIME(t_man_C));
+		do_valve_A_Act^ := FALSE;
+		do_valve_B_Act^ := FALSE;
+		do_valve_C_Act^ := FALSE;
+		out_gr1.0:=FALSE;
+		out_gr1.1:=FALSE;
+		out_gr1.2:=FALSE;
+		out_gr1.3:=FALSE;
+		out_gr1.4:=FALSE;
+		out_gr1.5:=FALSE;
+		out_gr1.6:=FALSE;
+		out_gr1.7:=FALSE;
+(*Переход в ручной режим*)
+ELSIF 	ftrig_global_auto_manual.Q THEN
+		tmr_valveA(IN:=FALSE, PT:=DWORD_TO_TIME(t_man_A));
+		tmr_vavleB(IN:=FALSE, PT:=DWORD_TO_TIME(t_man_B));
+		tmr_valveC(IN:=FALSE, PT:=DWORD_TO_TIME(t_man_C));
+		do_valve_A_Act^ := FALSE;
+		do_valve_B_Act^ := FALSE;
+		do_valve_C_Act^ := FALSE;
+		do_valve_cyrcle_Act^ :=FALSE;
+		m_cykl:=FALSE;
+		do_valve_Water_Act^:=FALSE;
+		m_nabor:=FALSE;
+		do_pump_Act^ := FALSE;
+		m_NASOS:=FALSE;
+		out_gr1.0:=FALSE; m_kl1:=FALSE;
+		out_gr1.1:=FALSE; m_kl2:=FALSE;
+		out_gr1.2:=FALSE; m_kl3:=FALSE;
+		out_gr1.3:=FALSE; m_kl4:=FALSE;
+		out_gr1.4:=FALSE; m_kl5:=FALSE;
+		out_gr1.5:=FALSE; m_kl6:=FALSE;
+		out_gr1.6:=FALSE; m_kl7:=FALSE;
+		out_gr1.7:=FALSE; m_kl8:=FALSE;
+
+(*Работа в авто режиме*)
+ELSIF 	global_auto_manual OR ind_first_mix_working THEN 	(*Если режим АВТО или приготовление начального раствора!!!!!!!!!!!!!!*)
+		do_valve_A_Act^ := DozVars[0].valve;
+		do_valve_B_Act^ := DozVars[0].valve;
+		do_valve_C_Act^ := DozVars[1].valve;
+		do_valve_cyrcle_Act^ := Poliv.out_valve_cyrcle; (*Нет первоначального раствора!!!!!!*)
+		do_valve_Water_Act^ := Podpitka.out_valve_Water;
+		do_pump_Act^ := Poliv.out_pump;
+		out_gr1:=Poliv.out_valve_poliv_BYTE;
+(*Переход в ручном режим*)
+ELSE
+		tmr_valveA(IN:=m_A, PT:=DWORD_TO_TIME(t_man_A));
+		tmr_vavleB(IN:=m_B, PT:=DWORD_TO_TIME(t_man_B));
+		tmr_valveC(IN:=m_C, PT:=DWORD_TO_TIME(t_man_C));
+		do_valve_A_Act^ := tmr_valveA.Q;
+		do_valve_B_Act^ := tmr_vavleB.Q;
+		do_valve_C_Act^ := tmr_valveC.Q;
+		do_valve_cyrcle_Act^ :=m_cykl;
+		do_valve_Water_Act^:=m_nabor;
+		do_pump_Act^ := m_NASOS;
+		out_gr1.0:=m_kl1;
+		out_gr1.1:=m_kl2;
+		out_gr1.2:=m_kl3;
+		out_gr1.3:=m_kl4;
+		out_gr1.4:=m_kl5;
+		out_gr1.5:=m_kl6;
+		out_gr1.6:=m_kl7;
+		out_gr1.7:=m_kl8;
+END_IF
+
+
+do_valve_A_New^ :=TRUE; do_valve_B_New^ :=TRUE; do_valve_C_New^ :=TRUE; do_valve_cyrcle_New^ := TRUE;do_valve_Water_New^:=TRUE;do_pump_New^ :=TRUE;
+
+END_PROGRAM

@@ -6,6 +6,13 @@
 (* @SYMFILEFLAGS := '2048' *)
 PROGRAM Modbus
 VAR
+	I, J : INT;
+	adr_1, adr_2 : POINTER TO WORD;
+	arr_sp_time : POINTER TO ARRAY [0..95] OF WORD;
+	arr_sp_task_litr : POINTER TO ARRAY [0..31] OF REAL;
+	arr_valves : POINTER TO ARRAY [0..63] OF BYTE;
+	arr_act : POINTER TO DWORD;
+	temp_dword : DWORD;
 END_VAR
 (* @END_DECLARATION := '0' *)
 
@@ -13,26 +20,46 @@ ind_NOT_POLIV := NOT ind_POLIV;
 ind_manual_visible := NOT global_auto_manual;
 P_nas_to_panel:=REAL_TO_WORD(AI_ARRAY[3].outVal);
 ind_temp_water:= AI_ARRAY[2].outVal;
-skip_poliv:=FALSE;
+cmd_skip_poliv:=FALSE;
+ind_zone_poliv :=Raspisanie.out_index_poliv+1;
+ind_avr_EC_min:=DozVars[0].avar.0;
+ind_avr_EC_max:=DozVars[0].avar.1;
+ind_avr_PH_min:=DozVars[1].avar.0;
+ind_avr_PH_max:=DozVars[1].avar.1;
+ind_warn_EC_min:=DozVars[0].warn.0;
+ind_warn_EC_max:=DozVars[0].warn.1;
+ind_warn_PH_min:=DozVars[1].warn.0;
+ind_warn_PH_max:=DozVars[1].warn.1;
+
+ind_ready_EC:=DozVars[0].ready;
+ind_ready_pH:=DozVars[1].ready;
+ind_ready_mix:=ind_ready_EC AND ind_ready_pH;
+
+
+
 (*EC*)
 AI_ARRAY[0].min_fiz :=low_fiz_EC;
 AI_ARRAY[0].max_fiz :=high_fiz_EC;
-(*sdvig_fiz_EC*)
+AI_ARRAY[0].sdvig :=sdvig_fiz_EC;
+
 
 (*PH*)
 AI_ARRAY[1].min_fiz :=low_fiz_PH;
 AI_ARRAY[1].max_fiz :=high_fiz_PH;
-(*sdvig_fiz_PH*)
+AI_ARRAY[1].sdvig :=sdvig_fiz_PH;
+
 
 (*Temp*)
 AI_ARRAY[2].min_fiz :=low_fiz_temp;
 AI_ARRAY[2].max_fiz :=high_fiz_temp;
-(*sdvig_fiz_temp*)
+AI_ARRAY[2].sdvig :=sdvig_fiz_temp;
+
 
 (*Pump*)
 AI_ARRAY[3].min_fiz :=WORD_TO_REAL(low_fiz_Pnas);
 AI_ARRAY[3].max_fiz :=WORD_TO_REAL(high_fiz_Pnas);
-(*sdvig_fiz_Pnas*)
+AI_ARRAY[3].sdvig :=WORD_TO_REAL(sdvig_fiz_Pnas);
+
 
 
 	DozVars[0].param.sp_conc :=sp_EC;					(*уставка концентрации*)
@@ -61,7 +88,42 @@ AI_ARRAY[3].max_fiz :=WORD_TO_REAL(high_fiz_Pnas);
 	ind_time_imp_PH:=DozVars[1].cur_time_imp;
 	ind_time_pause_PH:=DozVars[1].cur_time_pause;
 
-
 ind_cur_EC := AI_ARRAY[0].outVal;
 ind_cur_PH := AI_ARRAY[1].outVal;
+ind_A:=do_valve_A_Act^;
+ind_B:=do_valve_B_Act^;
+ind_C:=do_valve_C_Act^;
+ind_v1:=out_gr1.0;
+ind_v2:=out_gr1.1;
+ind_v3:=out_gr1.2;
+ind_v4:=out_gr1.3;
+ind_v5:=out_gr1.4;
+ind_v6:=out_gr1.5;
+ind_v7:=out_gr1.6;
+ind_v8:=out_gr1.7;
+ind_Water:=do_valve_Water_Act^;
+ind_NAS:=do_pump_Act^;
+ind_cykl:=do_valve_cyrcle_Act^;
+ind_in_count:=DI_ARRAY[0].inVal;
+(*вычитка массива уставок расписания*)
+arr_sp_time:=ADR(Begin_Adr_Time);
+arr_sp_task_litr:=ADR(Begin_adr_task);
+arr_valves:=ADR(Begin_adr_valves);
+arr_act:=ADR(Begin_adr_act);
+J:=0;
+FOR I:=0 TO 32-1 DO
+	Rasp_ARRAY[I].param.H_sp:=arr_sp_time^[J];
+	Rasp_ARRAY[I].param.M_sp:=arr_sp_time^[J+1];
+	Rasp_ARRAY[I].param.pt_Time:=arr_sp_time^[64+I];
+	J:=J+2;
+	Rasp_ARRAY[I].param.count_sp:=arr_sp_task_litr^[I];
+	Rasp_ARRAY[I].param.pArrValve:=arr_valves^[I];
+	temp_dword:=arr_act^;
+	temp_dword:=ROR(temp_dword, I);
+	Rasp_ARRAY[I].param.activ:=(temp_dword AND 1) <> 0;
+END_FOR
+
+IF cmd_reset_count_skip THEN cnt_poliv:=0; END_IF
+
+
 END_PROGRAM

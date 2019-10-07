@@ -7,105 +7,96 @@
 FUNCTION_BLOCK fbDoz
 VAR_INPUT
 	in : POINTER TO tDoz;
-	enable : BOOL;
-	reset : BOOL;
+	in_enable_doz : BOOL;		(*Включение работы клапана*)
+	in_enable_analis : BOOL;	(*Включение анализа аварийных состояний*)
 	auto_manual:BOOL;
-	initial : BOOL;	(*Начальное приготовление раствора*)
 END_VAR
 VAR_OUTPUT
-	blocked: BOOL;	(*заблокировано по аварии*)
-	valve : BOOL;	(*Выход на клапан*)
-	ready : BOOL;	(*Флаг готовности раствора*)
 END_VAR
 VAR
 	tmrAvarWarn : ARRAY [0..3] OF TON;
-	tmrImp, tmrPause : TON;
+	tmrImp, tmrPause, tmrReady : TON;
 	tmrManual : TOF;
 	switch_imp : INT;
 	rasoglas : REAL;
 	timeIpm, timePause : REAL;
 	fbLin_trafo_imp, fbLin_trafo_pause : LIN_TRAFO;
-	r_trig_manual: R_TRIG;
+	r_trig_enable, r_trig_reset, r_trig_auto : R_TRIG;
+	valve : BOOL;	(*Выход на клапан*)
+	need_doz : BOOL; (*Нужно дозировать*)
 END_VAR
 (* @END_DECLARATION := '0' *)
-IF reset THEN
-	in^.avar:=0;
-	in^.warn:=0;
-	enable:=FALSE;
-	blocked:= FALSE;
-	tmrImp(IN:=FALSE, PT:=WORD_TO_TIME(in^.cur_time_imp));
-	tmrPause(IN:=FALSE, PT:=WORD_TO_TIME(in^.cur_time_pause));
-	tmrAvarWarn[1](IN:=FALSE, PT:=T#5s);
-	tmrAvarWarn[3](IN:=FALSE, PT:=T#2s);
-	tmrAvarWarn[0](IN:=FALSE, PT:=T#5s);
-	tmrAvarWarn[2](IN:=FALSE, PT:=T#2s);
+(*Взависимости от режима работы*)
+IF NOT in^.param.invert THEN
+	rasoglas := in^.param.sp_conc - in^.cur_conc;
+	need_doz:=in^.cur_conc<=in^.param.sp_conc-in^.param.sp_hyst;
+ELSE
+	rasoglas := in^.cur_conc - in^.param.sp_conc ;
+	need_doz:=in^.cur_conc>=in^.param.sp_conc+in^.param.sp_hyst;
 END_IF
-r_trig_manual(CLK:=auto_manual);
-IF r_trig_manual.Q THEN (*Сброс при переходе в авто сброс таймеров*)
+(*Расчёт требуемых пауз и длительности импульсов*)
+rasoglas := LIMIT(0, rasoglas, 2);
+fbLin_trafo_imp(IN:=rasoglas, IN_MIN:=0, IN_MAX:=2, OUT_MIN:= in^.param.pt_min_imp , OUT_MAX:=in^.param.pt_max_imp);
+fbLin_trafo_pause(IN:=rasoglas, IN_MIN:=0, IN_MAX:=2, OUT_MIN:= in^.param.pt_min_pause , OUT_MAX:=in^.param.pt_max_pause);
+timeIpm:=fbLin_trafo_imp.OUT;
+timePause:=fbLin_trafo_pause.OUT;
+in^.cur_time_imp := REAL_TO_WORD(LIMIT(in^.param.pt_min_imp, timeIpm ,in^.param.pt_max_imp));
+in^.cur_time_pause := REAL_TO_WORD(LIMIT(in^.param.pt_min_pause, timePause ,in^.param.pt_max_pause));
+
+r_trig_enable(CLK:=in_enable_doz);
+r_trig_auto(CLK:=auto_manual);
+(*Сброс, перед началом дозации*)
+IF  r_trig_auto.Q OR r_trig_enable.Q THEN (*Если пришла команда сброса, перевода а авто или запуска*)
+	in^.avar:=0; in^.warn:=0;
+	switch_imp := 1; (*Начинать дозацию с паузы*)
 	tmrImp(IN:=FALSE, PT:=WORD_TO_TIME(in^.cur_time_imp));
 	tmrPause(IN:=FALSE, PT:=WORD_TO_TIME(in^.cur_time_pause));
-	tmrAvarWarn[1](IN:=FALSE, PT:=T#5s);
-	tmrAvarWarn[3](IN:=FALSE, PT:=T#2s);
 	tmrAvarWarn[0](IN:=FALSE, PT:=T#5s);
+	tmrAvarWarn[1](IN:=FALSE, PT:=T#5s);
 	tmrAvarWarn[2](IN:=FALSE, PT:=T#2s);
+	tmrAvarWarn[3](IN:=FALSE, PT:=T#2s);
 	valve:=FALSE;
 END_IF
-IF enable AND NOT blocked AND auto_manual THEN (*Если необходима дозация*)
 
-
-	IF in^.cur_conc<=in^.param.sp_conc-in^.param.sp_hyst THEN	(*Если требуется подправить концентрацию*)
-		(*Расчёт требуемых пауз и длительности импульсов*)
-		rasoglas := in^.param.sp_conc - in^.cur_conc;
-		rasoglas := LIMIT(0, rasoglas, 3);
-		fbLin_trafo_imp(IN:=rasoglas, IN_MIN:=0, IN_MAX:=3, OUT_MIN:= in^.param.pt_min_imp , OUT_MAX:=in^.param.pt_max_imp);
-		fbLin_trafo_pause(IN:=rasoglas, IN_MIN:=0, IN_MAX:=3, OUT_MIN:= in^.param.pt_min_pause , OUT_MAX:=in^.param.pt_max_pause);
-		timeIpm:=fbLin_trafo_imp.OUT;
-		timePause:=fbLin_trafo_pause.OUT;
-
-		in^.cur_time_imp := REAL_TO_WORD(LIMIT(in^.param.pt_min_imp, timeIpm ,in^.param.pt_max_imp));
-		in^.cur_time_pause := REAL_TO_WORD(LIMIT(in^.param.pt_min_pause, timePause ,in^.param.pt_max_pause));
-		CASE switch_imp OF		(*Переключение работы клапана*)
-		0:	valve:=TRUE;
-			tmrImp(IN:=TRUE, PT:=WORD_TO_TIME(in^.cur_time_imp));
-			tmrPause(IN:=FALSE, PT:=WORD_TO_TIME(in^.cur_time_pause));
-			IF tmrImp.Q THEN
-				switch_imp:=1;
-				valve:=FALSE;
-			END_IF
-		1:	tmrImp(IN:=FALSE, PT:=WORD_TO_TIME(in^.cur_time_imp));
-			tmrPause(IN:=TRUE, PT:=WORD_TO_TIME(in^.cur_time_pause));
-			IF tmrPause.Q THEN
-				switch_imp:=0;
-			END_IF
-		END_CASE
-	ELSIF in^.cur_conc>in^.param.sp_conc-in^.param.sp_hyst THEN
+IF auto_manual THEN
+	IF in_enable_doz THEN (*Если необходима дозация или приготовление нового раствора*)
+		IF need_doz THEN	(*Если требуется подправить концентрацию*)
+			CASE switch_imp OF		(*Переключение работы клапана*)
+			0:	valve:=TRUE;
+				tmrImp(IN:=TRUE, PT:=WORD_TO_TIME(in^.cur_time_imp));
+				tmrPause(IN:=FALSE, PT:=WORD_TO_TIME(in^.cur_time_pause));
+				IF tmrImp.Q THEN
+					switch_imp:=1;
+					valve:=FALSE;
+				END_IF
+			1:	tmrImp(IN:=FALSE, PT:=WORD_TO_TIME(in^.cur_time_imp));
+				tmrPause(IN:=TRUE, PT:=WORD_TO_TIME(in^.cur_time_pause));
+				IF tmrPause.Q THEN
+					switch_imp:=0;
+				END_IF
+			END_CASE
+		ELSE
+			valve:=FALSE; (*Если концентрация выше уставки то закрываем клапан*)
+		END_IF
+	ELSE
 		valve:=FALSE;
 	END_IF
-
-	(*Определение аварийных и предупредительных ситуаций*)
-	IF NOT initial THEN (*Если начальное приготовление раствора, то убираем проверку на минимальную аварийную концентрацию*)
-		tmrAvarWarn[1](IN:=in^.cur_conc < in^.param.sp_min_avr, PT:=T#5s);
-		tmrAvarWarn[3](IN:=in^.cur_conc < in^.param.sp_min_warn, PT:=T#2s);
-	END_IF
-	tmrAvarWarn[0](IN:=in^.cur_conc > in^.param.sp_max_avr, PT:=T#5s);
-	tmrAvarWarn[2](IN:=in^.cur_conc > in^.param.sp_max_warn, PT:=T#2s);
-	in^.avar.0 := tmrAvarWarn[0].Q;
-	in^.avar.1 := tmrAvarWarn[1].Q;
-	IF in^.avar <> 0 THEN
-		blocked:=TRUE;
-	END_IF
-	in^.warn.0 := tmrAvarWarn[2].Q;
-	in^.warn.1 := tmrAvarWarn[3].Q;
-
-
-
-
-ELSIF NOT auto_manual THEN
-	tmrManual(IN:=in^.param.bManual, PT:=DWORD_TO_TIME(in^.param.pt_manual));
-	valve:= tmrManual.Q;
 END_IF
 
-ready:=in^.cur_conc>in^.param.sp_conc-in^.param.sp_hyst AND in^.avar = 0; 	(*Готовность если раствор набрал концентрацию и нет аварий*)
+IF in_enable_analis THEN
+(*Определение аварийных и предупредительных ситуаций*)
+	tmrAvarWarn[0](IN:=in^.cur_conc < in^.param.sp_min_avr, PT:=T#60s);
+	tmrAvarWarn[1](IN:=in^.cur_conc > in^.param.sp_max_avr, PT:=T#60s);
+	tmrAvarWarn[2](IN:=in^.cur_conc < in^.param.sp_min_warn, PT:=T#40s);
+	tmrAvarWarn[3](IN:=in^.cur_conc > in^.param.sp_max_warn, PT:=T#40s);
+	in^.avar.0 := tmrAvarWarn[0].Q;
+	in^.avar.1 := tmrAvarWarn[1].Q;
+	in^.warn.0 := tmrAvarWarn[2].Q;
+	in^.warn.1 := tmrAvarWarn[3].Q;
+END_IF
+
+tmrReady(IN:=(in^.cur_conc>in^.param.sp_conc-in^.param.sp_hyst) AND (in^.cur_conc<in^.param.sp_conc+in^.param.sp_hyst), PT:=T#5s); (*если раствор набрал концентрацию и нет аварий *)
+in^.ready:=tmrReady.Q; 	(*Раствор готов*)
 in^.valve := valve;
 
 END_FUNCTION_BLOCK
