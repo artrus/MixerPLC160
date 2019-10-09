@@ -1,0 +1,68 @@
+
+
+(* @NESTEDCOMMENTS := 'Yes' *)
+(* @PATH := '' *)
+(* @OBJECTFLAGS := '0, 8' *)
+(* @SYMFILEFLAGS := '2048' *)
+FUNCTION_BLOCK fbFirstMix
+VAR_INPUT
+	in_start : BOOL;
+	in_stop : BOOL;
+	in_auto_manual : BOOL;
+	in_ptGotov : TIME;
+	in_ReadyMix : BOOL;
+END_VAR
+VAR_OUTPUT
+	out_working : BOOL;
+	out_ready : BOOL;
+	out_doz_on : BOOL;
+	out_avar_timeout : BOOL;
+END_VAR
+VAR
+	state : INT;
+ 	tmrFirstMix : TON;
+	r_trig_start : R_TRIG;
+END_VAR
+(* @END_DECLARATION := '0' *)
+r_trig_start(CLK:=in_start);
+
+IF NOT in_auto_manual THEN
+	CASE state OF
+	0:	IF r_trig_start.Q AND NOT in_ReadyMix THEN
+			out_working:=TRUE;
+			out_ready:=FALSE;
+			out_doz_on :=TRUE;
+			out_avar_timeout:=FALSE;
+			tmrFirstMix(IN:=FALSE, PT:=in_ptGotov);
+			state :=1;
+		END_IF
+
+	1:	IF in_ReadyMix THEN
+			out_ready :=TRUE;
+			out_doz_on :=FALSE;
+			out_working:=FALSE;
+			state :=0;
+		ELSIF in_stop THEN
+			state :=0;
+			out_doz_on :=FALSE;
+			out_working:=FALSE;
+		ELSE
+			tmrFirstMix(IN:=TRUE, PT:=in_ptGotov);
+			IF tmrFirstMix.Q THEN
+				out_avar_timeout:=TRUE;
+				out_doz_on :=FALSE;
+				out_working:=FALSE;
+				state :=0;
+			END_IF
+		END_IF
+	END_CASE
+ELSE
+	out_working:=FALSE;
+	out_ready:=FALSE;
+	out_doz_on :=FALSE;
+	out_avar_timeout:=FALSE;
+	tmrFirstMix(IN:=FALSE, PT:=in_ptGotov);
+	state :=0;
+END_IF
+
+END_FUNCTION_BLOCK

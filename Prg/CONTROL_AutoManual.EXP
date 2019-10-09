@@ -59,11 +59,11 @@ ELSIF 	global_auto_manual OR ind_first_mix_working THEN 	(*Если режим АВТО или п
 		do_valve_A_Act^ := DozVars[0].valve;
 		do_valve_B_Act^ := DozVars[0].valve;
 		do_valve_C_Act^ := DozVars[1].valve;
-		do_valve_cyrcle_Act^ := Poliv.out_valve_cyrcle; (*Нет первоначального раствора!!!!!!*)
+		do_valve_cyrcle_Act^ := Poliv.out_valve_cyrcle OR FirstMix.out_working;  (*Нет первоначального раствора!!!!!!*)
 		do_valve_Water_Act^ := Podpitka.out_valve_Water;
-		do_pump_Act^ := Poliv.out_pump;
+		do_pump_Act^ := Poliv.out_pump OR FirstMix.out_working;
 		out_gr1:=Poliv.out_valve_poliv_BYTE;
-(*Переход в ручном режим*)
+(*ручной режим*)
 ELSE
 		tmr_valveA(IN:=m_A, PT:=DWORD_TO_TIME(t_man_A));
 		tmr_vavleB(IN:=m_B, PT:=DWORD_TO_TIME(t_man_B));

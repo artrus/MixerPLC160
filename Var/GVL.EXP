@@ -33,6 +33,7 @@ VAR_GLOBAL
 	Podpitka : fbPodpitka;
 	Doz : ARRAY [0..1] OF fbDoz;
 	Poliv : fbPoliv;
+	FirstMix : fbFirstMix;
 
 	di_in_count : POINTER TO BOOL;	 (*—четчик полива*)
 	di_lev25 : POINTER TO BOOL;

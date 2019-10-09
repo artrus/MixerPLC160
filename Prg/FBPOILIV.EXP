@@ -9,7 +9,7 @@ VAR_INPUT
 	start : BOOL;
 	skip : BOOL;				(*Пропустить полив*)
 	index_poliv : WORD;
-	in_ready_mix : BOOL;		(*Раствор готов*)
+	in_avar_mix : BOOL;		(*Раствор готов*)
 	pt_podgotov1, pt_podgotov2, pt_sliv : WORD;
 END_VAR
 VAR_OUTPUT
@@ -28,11 +28,12 @@ VAR
 	count_sum : DWORD;
 	r_trig_start, r_trig_count, r_trig_skip : R_TRIG;
 	tmr_podg1, tmr_podg2, tmr_poliv, tmr_sliv: TON;
-	tmr_ready_mix : TON;
+	tmr_avar_mix : TON;
 	pt_poliv, count_sp : DWORD;
 	tmr_infoPT : TON;
 	ind_time_poliv_1_temp : DWORD;
 	sum_time : DWORD;
+	ptAvarMix : TIME := T#3s;
 END_VAR
 (* @END_DECLARATION := '0' *)
 
@@ -48,7 +49,7 @@ IF  r_trig_start.Q OR r_trig_skip.Q THEN
 	tmr_podg2(IN:=FALSE, PT:=DWORD_TO_TIME(pt_podgotov2*60*1000));
 	tmr_poliv(IN:=FALSE, PT:=DWORD_TO_TIME(pt_poliv*1000*60));
 	tmr_sliv(IN:=FALSE,  PT:=DWORD_TO_TIME(pt_sliv*1000*60));
-	tmr_ready_mix(IN:=FALSE, PT:=T#30s);
+	tmr_avar_mix(IN:=FALSE, PT:=ptAvarMix);
 	out_valve_poliv_BYTE:=0;
 	out_valve_cyrcle := FALSE;
 	out_pump := FALSE;
@@ -79,15 +80,15 @@ CASE state OF
 		END_IF
 	2:	tmr_podg2(IN:=TRUE, PT:=DWORD_TO_TIME(pt_podgotov2*60*1000));	(*Подготовка раствора*)
 		IF tmr_podg2.Q THEN
-			IF in_ready_mix THEN			(*Если раствор готов*)
+			IF NOT in_avar_mix THEN			(*Если аварий раствора нет*)
 				out_act_doz:=FALSE;			(*Отключение дозаторов*)
 				out_valve_cyrcle:=FALSE;	(*Закрытие клапана циркуляции*)
 				out_valve_poliv_BYTE:=Rasp_ARRAY[index_poliv].param.pArrValve;	(*Открытие клапана на полив*)
 				state:=3;
-				tmr_ready_mix(IN:=FALSE, PT:=T#30s);
-			ELSE	(*Ожидание 1 минуты до готовности раствора, иначе сообщение ТАЙМАУТ ПРИГОТОВЛЕНИЯ*)
-				tmr_ready_mix(IN:=TRUE, PT:=T#30s);
-				IF tmr_ready_mix.Q THEN		(*Авария таймаут*)
+				tmr_avar_mix(IN:=FALSE, PT:=ptAvarMix);
+			ELSE	(*Ожидание 3 секунды иначе сообщение ТАЙМАУТ ПРИГОТОВЛЕНИЯ и аварийное состояние раствора*)
+				tmr_avar_mix(IN:=TRUE, PT:=ptAvarMix);
+				IF tmr_avar_mix.Q THEN		(*Авария таймаут*)
 					out_avar_timeout_mix:=TRUE;	(*Авария таймаут*)
 					out_act_doz:=FALSE;			(*Отключение дозаторов*)
 					out_valve_cyrcle:=FALSE;	(*Закрытие клапана циркуляции*)
@@ -96,7 +97,7 @@ CASE state OF
 					out_skiped :=TRUE;
 					cnt_poliv:= cnt_poliv+1; (*Для статистики на панели*)
 					state:=4;
-					tmr_ready_mix(IN:=FALSE, PT:=T#30s);
+					tmr_avar_mix(IN:=FALSE, PT:=ptAvarMix);
 				END_IF
 			END_IF
 		END_IF
